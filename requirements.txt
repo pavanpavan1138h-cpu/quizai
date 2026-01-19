@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pydantic
+python-multipart
+torch
+transformers
+easyocr
+pypdf2
+python-dotenv
+aiofiles
+jinja2
+python-multipart
+sentencepiece
+protobuf

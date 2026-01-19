@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocratAI | Adaptive Learning Platform</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Landing Screen -->
+        <div id="screen-landing" class="screen active">
+            <header>
+                <div class="logo">SocratAI</div>
+            </header>
+            <main class="hero">
+                <div class="module-indicator">Module 1: User Interface</div>
+                <h1>Perfect <span>AI Question</span> Engine</h1>
+                <p>Advanced synthesis and deep-learning driven question generation. Upload any document and generate a
+                    structured, high-quality question bank instantly.</p>
+                <div class="cta-group">
+                    <button id="btn-to-upload" class="btn primary">Start AI Generation Engine</button>
+                    <button id="btn-to-train" class="btn secondary">View Knowledge Base Synthesis</button>
+                </div>
+                <div class="status-msg" id="status-msg">Powered by Flan-T5 & Few-Shot Deep Learning.</div>
+            </main>
+        </div>
+
+        <!-- Upload Screen -->
+        <div id="screen-upload" class="screen">
+            <div class="module-indicator">Module 4: AI Question Generation</div>
+            <div class="card glass">
+                <h2>1. Upload Material</h2>
+                <p>Upload a PDF, Image, or Text file to generate questions.</p>
+                <div class="upload-zone" id="upload-zone">
+                    <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.txt" hidden>
+                    <div class="upload-content">
+                        <span class="icon">📁</span>
+                        <p>Click or drag to upload</p>
+                        <small>Supports PDF, Images, TXT</small>
+                    </div>
+                </div>
+                <div id="file-status" class="hidden">
+                    <p>Selected: <span id="file-name"></span></p>
+                </div>
+                <div class="btn-group">
+                    <button id="btn-back-to-landing" class="btn ghost">Back</button>
+                    <button id="btn-to-config" class="btn primary" disabled>Next: Configure</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Screen -->
+        <div id="screen-config" class="screen">
+            <div class="card glass">
+                <h2>2. Configure Quiz</h2>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label>Question Type</label>
+                        <select id="config-type">
+                            <option value="MCQ">Multiple Choice (MCQ)</option>
+                            <option value="Fill">Fill in the Blanks</option>
+                            <option value="Short">Short Answer</option>
+                        </select>
+                    </div>
+                    <div class="config-item">
+                        <label>Bloom's Mode</label>
+                        <select id="config-bloom-mode" onchange="toggleBloomLevel()">
+                            <option value="Single">Single Level</option>
+                            <option value="Mixed">Mixed (Balanced)</option>
+                            <option value="All">Comprehensive (All Levels)</option>
+                        </select>
+                    </div>
+                    <div class="config-item" id="config-bloom-level-container">
+                        <label>Target Level</label>
+                        <select id="config-bloom-level">
+                            <option value="Remember">Remember (Recall)</option>
+                            <option value="Understand">Understand (Explain)</option>
+                            <option value="Apply">Apply (Demonstrate)</option>
+                            <option value="Analyze">Analyze (Distinguish)</option>
+                        </select>
+                    </div>
+                    <div class="config-item">
+                        <label>Number of Questions</label>
+                        <input type="number" id="config-count" value="5" min="1" max="25">
+                    </div>
+                    <div class="config-item full-width">
+                        <label>Custom AI Prompt (Module 4)</label>
+                        <textarea id="config-prompt"
+                            placeholder="e.g. Generate 5 hard MCQs from this paragraph focus only on important concepts..."></textarea>
+                    </div>
+                    <div class="config-item">
+                        <label>Focus Topics (Optional)</label>
+                        <input type="text" id="config-focus" placeholder="e.g. Mitochondria, Laws of Motion">
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button id="btn-back-to-upload" class="btn ghost">Back</button>
+                    <button id="btn-generate-quiz" class="btn primary">Generate Quiz</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generation Loader Screen -->
+        <div id="screen-loading" class="screen">
+            <div class="card glass text-center" style="max-width: 500px; padding: 3rem;">
+                <div class="spinner" style="margin: 0 auto 2rem;"></div>
+                <h2 style="margin-bottom: 1rem;">AI Engine Synthesizing...</h2>
+                <div id="loading-step" class="status-msg">Analyzing document context (1/3)</div>
+                <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 1rem;">Applying Few-Shot Training & Bloom's
+                    Taxonomy</p>
+            </div>
+        </div>
+
+        <!-- Interactive Quiz Screen -->
+        <div id="screen-quiz" class="screen">
+            <div class="module-indicator" id="module-label">Module 1: Diagnostic Assessment</div>
+            <div class="quiz-header">
+                <div class="progress-container">
+                    <div class="progress-bar" id="quiz-progress"></div>
+                </div>
+                <div class="timer" id="quiz-timer">00:00</div>
+            </div>
+            <div class="question-container card glass">
+                <div class="question-badge" id="question-info">Question 1 / 5</div>
+                <div class="difficulty-badge" id="difficulty-info">Bloom: Analyze</div>
+                <h3 id="question-text" style="line-height: 1.5; margin-bottom: 2rem;">Loading question...</h3>
+                <div class="options-grid" id="options-container">
+                    <!-- Options dynamic -->
+                </div>
+                <div id="behavioral-feedback" class="status-msg"
+                    style="margin-top: 1rem; font-size: 0.8rem; font-style: italic; opacity: 0.7;"></div>
+            </div>
+        </div>
+
+        <!-- Module Transition Screen -->
+        <div id="screen-transition" class="screen">
+            <div class="card glass text-center" style="max-width: 600px; padding: 3rem;">
+                <h2 id="transition-title">Module 1 Complete</h2>
+                <p id="transition-msg" style="margin: 1.5rem 0;">Analyzing your behavior and accuracy to prepare Module
+                    2...</p>
+                <div class="stat-row" style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 2rem;">
+                    <div class="mini-stat"><strong>Accuracy:</strong> <span id="trans-accuracy">0%</span></div>
+                    <div class="mini-stat"><strong>Avg Time:</strong> <span id="trans-time">0s</span></div>
+                </div>
+                <button id="btn-start-next-module" class="btn primary">Start Next Module</button>
+            </div>
+        </div>
+
+        <!-- Analytics Screen (Re-pivoted to Question Bank View) -->
+        <div id="screen-analytics" class="screen">
+            <div class="module-indicator">Module 6: Generated Question Bank</div>
+            <div class="analytics-container">
+                <div class="card result-card">
+                    <h2>Generation Complete!</h2>
+                    <p id="performance-msg">Your structured knowledge base and answer keys are ready below.</p>
+                </div>
+
+                <div id="generated-questions-list" class="scroll-area"
+                    style="margin-top: 2rem; text-align: left; max-height: 500px; overflow-y: auto; padding-right: 1rem;">
+                    <!-- Questions will reach here -->
+                </div>
+
+                <div class="cta-group" style="margin-top: 3rem;">
+                    <button onclick="showScreen('screen-landing')" class="btn secondary">Return to Home</button>
+                    <button onclick="window.print()" class="btn primary">Download/Print PDF</button>
+                </div>
+            </div>
+            <!-- Training Screen -->
+            <div id="screen-training" class="screen">
+                <div class="module-indicator">Module 5: Synthetic Training & KB</div>
+                <div class="card glass">
+                    <h2>AI Knowledge Training</h2>
+                    <p>Synthesize a wide-scale dataset from your document for model refinement.</p>
+                    <div id="training-status" class="status-msg">Ready to start training...</div>
+                    <div class="scroll-area" id="training-dataset"
+                        style="display: none; height: 300px; overflow-y: auto; text-align: left; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; font-size: 0.85rem; margin-top: 1rem;">
+                    </div>
+                    <div class="cta-group" style="margin-top: 2rem;">
+                        <button id="btn-run-training" class="btn primary">Start Training Synthesis</button>
+                        <button onclick="showScreen('screen-landing')" class="btn secondary">Back Home</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type="module" src="js/main.js"></script>
+</body>
+
+</html>
