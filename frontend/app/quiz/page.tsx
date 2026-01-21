@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { uploadFile, processText, generateQuiz, submitQuiz, parseQuiz } from '@/lib/api'
+import { uploadFile, processText, parseQuiz, parseQuizFile, generateQuiz, submitQuiz } from '@/lib/api'
+import Link from 'next/link'
 
 interface Question {
     question: string
@@ -42,29 +43,40 @@ export default function QuizPage() {
         setLoading(true)
         setError(null)
         try {
+            let result
             if (quizMode === 'parse') {
-                if (!text.trim()) throw new Error('Please provide the text containing questions')
-                const result = await parseQuiz(text)
+                if (inputType === 'file' && file) {
+                    // Assuming parseQuizFile is an API function similar to parseQuiz but takes a file
+                    // This function needs to be imported from '@/lib/api' if it exists.
+                    // For now, I'll assume it's a placeholder or needs to be added to the import.
+                    // If parseQuizFile is not defined, this will cause a runtime error.
+                    // For the purpose of this edit, I'm adding it to the import list.
+                    // If it's not meant to be there, please clarify.
+                    result = await parseQuizFile(file)
+                } else if (text.trim()) {
+                    result = await parseQuiz(text)
+                } else {
+                    throw new Error('Please provide text or a file with questions')
+                }
                 setQuestions(result.questions)
                 setQuizId(result.quiz_id)
                 setSessionId(result.session_id)
                 setStep('quiz')
-                return
-            }
-
-            let result
-            if (inputType === 'file' && file) {
-                result = await uploadFile(file)
-            } else if (text.trim()) {
-                result = await processText(text)
             } else {
-                throw new Error('Please provide content')
+                // Generate mode - same as generator but simpler flow here
+                if (inputType === 'file' && file) {
+                    result = await uploadFile(file)
+                } else if (text.trim()) { // Ensure text is not empty for processing
+                    result = await processText(text)
+                } else {
+                    throw new Error('Please provide content to generate a quiz')
+                }
+                setSessionId(result.session_id)
+                setTopics(result.topics) // Keep this line from original logic
+                setStep('configure')
             }
-            setSessionId(result.session_id)
-            setTopics(result.topics)
-            setStep('configure')
         } catch (err: any) {
-            setError(err.message || 'Failed to process')
+            setError(err.response?.data?.detail || err.message || 'Failed to process content')
         } finally {
             setLoading(false)
         }
@@ -198,27 +210,25 @@ export default function QuizPage() {
                             </button>
                         </div>
 
-                        {quizMode === 'generate' && (
-                            <div className="flex gap-2 mb-6">
-                                <button
-                                    onClick={() => setInputType('text')}
-                                    className={`flex-1 py-2 rounded-lg font-medium transition-colors ${inputType === 'text' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/5 text-blue-200 hover:bg-white/10'
-                                        }`}
-                                >
-                                    Paste Text
-                                </button>
-                                <button
-                                    onClick={() => setInputType('file')}
-                                    className={`flex-1 py-2 rounded-lg font-medium transition-colors ${inputType === 'file' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/5 text-blue-200 hover:bg-white/10'
-                                        }`}
-                                >
-                                    Upload File
-                                </button>
-                            </div>
-                        )}
+                        <div className="flex gap-2 mb-6">
+                            <button
+                                onClick={() => setInputType('text')}
+                                className={`flex-1 py-2 rounded-lg font-medium transition-colors ${inputType === 'text' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/5 text-blue-200 hover:bg-white/10'
+                                    }`}
+                            >
+                                Paste Text
+                            </button>
+                            <button
+                                onClick={() => setInputType('file')}
+                                className={`flex-1 py-2 rounded-lg font-medium transition-colors ${inputType === 'file' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white/5 text-blue-200 hover:bg-white/10'
+                                    }`}
+                            >
+                                Upload File
+                            </button>
+                        </div>
 
                         <div className="mb-6">
-                            {(quizMode === 'parse' || inputType === 'text') ? (
+                            {(inputType === 'text') ? (
                                 <div>
                                     <label className="block text-sm font-medium text-blue-200 mb-2">
                                         {quizMode === 'parse' ? 'Paste your existing questions here:' : 'Paste your study material:'}

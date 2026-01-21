@@ -123,6 +123,44 @@ async def parse_quiz(request: ParseQuizRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/parse-quiz-file", response_model=QuizResponse)
+async def parse_quiz_file(file: UploadFile = File(...)):
+    """Parse questions from uploaded file (PDF/Image)"""
+    try:
+        # Save uploaded file
+        file_path = UPLOAD_DIR / f"parse_{file.filename}"
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Extract text using OCR/PDF
+        extracted_text = ocr_service.extract_text(str(file_path))
+        
+        if not extracted_text.strip():
+            raise HTTPException(status_code=400, detail="Could not extract any text from the uploaded file.")
+            
+        # Create a session for this parsed content
+        session_id = db.create_session(str(file_path), extracted_text, ["Parsed Questions"])
+        
+        # Parse questions using AI
+        quiz = quiz_generator.parse_questions_from_text(extracted_text)
+        
+        if not quiz or not quiz.get("questions"):
+            raise HTTPException(status_code=400, detail="Could not parse any questions from the extracted text.")
+            
+        # Store quiz in database
+        quiz_id = db.save_quiz(session_id, quiz, "parsed")
+        
+        return QuizResponse(
+            quiz_id=quiz_id,
+            questions=quiz["questions"],
+            session_id=session_id
+        )
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/topics/{session_id}", response_model=TopicListResponse)
 async def get_topics(session_id: str):
     """Get topics for a session"""
