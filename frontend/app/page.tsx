@@ -58,7 +58,8 @@ export default function Home() {
       </section>
 
       {/* Features Grid */}
-      <section className="py-16 px-4 bg-white/50">
+      {/* Features Grid */}
+      <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
             Why Choose SocratAI?
