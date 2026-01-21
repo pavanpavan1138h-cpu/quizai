@@ -148,9 +148,9 @@ export default function QuizPage() {
         <div className="py-12 px-4 animate-fade-in">
             <div className="max-w-3xl mx-auto">
                 {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-white mb-2">Take a Quiz</h1>
-                    <p className="text-blue-200">Test your knowledge with AI-generated questions</p>
+                <div className="text-center mb-12">
+                    <h1 className="text-4xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">Take a Quiz</h1>
+                    <p className="text-slate-600 dark:text-blue-200 text-lg">Test your knowledge with AI-powered questions</p>
                 </div>
 
                 {/* Error */}
@@ -169,7 +169,7 @@ export default function QuizPage() {
                                 setStep('input')
                                 setInputType('text')
                             }}
-                            className="glass-panel p-8 rounded-2xl hover:bg-white/5 border-primary/20 hover:border-blue-500/50 transition-all text-left group shadow-xl hover-tilt"
+                            className="card p-8 group transition-all text-left shadow-xl hover-tilt border-blue-500/10 hover:border-blue-500/30"
                         >
                             <div className="w-14 h-14 bg-blue-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-inner shadow-blue-500/10">
                                 <span className="text-3xl">✨</span>
@@ -186,7 +186,7 @@ export default function QuizPage() {
                                 setStep('input')
                                 setInputType('text')
                             }}
-                            className="glass-panel p-8 rounded-2xl hover:bg-white/5 border-primary/20 hover:border-purple-500/50 transition-all text-left group shadow-xl hover-tilt"
+                            className="card p-8 group transition-all text-left shadow-xl hover-tilt border-purple-500/10 hover:border-purple-500/30"
                         >
                             <div className="w-14 h-14 bg-purple-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-inner shadow-purple-500/10">
                                 <span className="text-3xl">📝</span>
@@ -201,11 +201,11 @@ export default function QuizPage() {
 
                 {/* Step 1: Input */}
                 {step === 'input' && (
-                    <div className="glass-panel p-8 rounded-3xl shadow-2xl animate-fade-in">
+                    <div className="card p-8 shadow-2xl animate-fade-in border-blue-500/10">
                         <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-2xl font-black">
+                            <h1 className="text-3xl font-black text-slate-900 dark:text-white">
                                 {quizMode === 'generate' ? 'Upload Material' : 'Paste Questions'}
-                            </h2>
+                            </h1>
                             <button
                                 onClick={() => setStep('landing')}
                                 className="text-sm font-bold text-primary hover:brightness-110"
@@ -246,13 +246,13 @@ export default function QuizPage() {
                                         className="w-full h-64 p-4 rounded-2xl bg-black/5 dark:bg-black/20 border border-white/10 text-foreground font-mono text-sm leading-relaxed placeholder-slate-400 focus:ring-4 focus:ring-primary/10 transition-all outline-none"
                                     />
                                     {quizMode === 'parse' && (
-                                        <p className="text-xs text-slate-400 dark:text-blue-300/60 mt-3">
-                                            * Supports text with questions, options, and answers. AI will parse the structure.
+                                        <p className="text-xs text-slate-500 dark:text-blue-300 mt-4 font-medium italic">
+                                            * Supports text with questions, options, and answers. AI will parse the structure automatically.
                                         </p>
                                     )}
                                 </div>
                             ) : (
-                                <div className="border-2 border-dashed border-primary/20 rounded-2xl p-16 text-center bg-white/5 hover:bg-white/10 hover:border-primary transition-all cursor-pointer relative group">
+                                <div className="border-2 border-dashed border-primary/30 rounded-2xl p-16 text-center bg-primary/5 hover:bg-primary/10 hover:border-primary transition-all cursor-pointer relative group">
                                     <input
                                         type="file"
                                         accept=".pdf,.png,.jpg,.txt"
@@ -260,14 +260,14 @@ export default function QuizPage() {
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                         id="quiz-file"
                                     />
-                                    <div className="text-5xl mb-6 text-primary group-hover:scale-110 transition-transform">
+                                    <div className="text-6xl mb-6 text-primary group-hover:scale-110 transition-transform">
                                         {file ? '📄' : '📤'}
                                     </div>
-                                    <p className="font-bold text-xl">
+                                    <p className="font-black text-2xl text-slate-900 dark:text-white">
                                         {file ? file.name : 'Click to upload material'}
                                     </p>
-                                    <p className="text-slate-500 dark:text-blue-300/60 text-sm mt-3 font-medium">
-                                        PDF, PNG, JPG, TXT supported
+                                    <p className="text-slate-600 dark:text-blue-300 text-sm mt-4 font-bold">
+                                        PDF, PNG, JPG, TXT
                                     </p>
                                 </div>
                             )}
@@ -292,12 +292,12 @@ export default function QuizPage() {
 
                 {/* Step 2: Configure */}
                 {step === 'configure' && (
-                    <div className="glass-panel p-8 space-y-8 rounded-3xl shadow-2xl animate-fade-in">
+                    <div className="card p-8 space-y-10 shadow-2xl animate-fade-in border-primary/10">
                         <div>
-                            <h2 className="text-2xl font-black mb-6">Quiz Settings</h2>
+                            <h1 className="text-3xl font-black mb-6 text-slate-900 dark:text-white">Quiz Settings</h1>
                             <div className="flex flex-wrap gap-2">
                                 {topics.slice(0, 8).map((t, i) => (
-                                    <span key={i} className="px-4 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-sm font-bold animate-float" style={{ animationDelay: `${i * 100}ms` }}>
+                                    <span key={i} className="px-5 py-2 bg-primary dark:bg-primary/10 text-white dark:text-primary border border-primary/20 rounded-full text-xs font-black uppercase tracking-wider animate-float" style={{ animationDelay: `${i * 100}ms` }}>
                                         #{t}
                                     </span>
                                 ))}
@@ -305,8 +305,8 @@ export default function QuizPage() {
                         </div>
 
                         <div className="space-y-4">
-                            <label className="block text-lg font-bold">
-                                Number of Questions: <span className="text-primary font-black">{numQuestions}</span>
+                            <label className="block text-xl font-bold text-slate-800 dark:text-blue-100">
+                                Number of Questions: <span className="text-primary font-black ml-1">{numQuestions}</span>
                             </label>
                             <input
                                 type="range"
@@ -449,8 +449,8 @@ export default function QuizPage() {
 
                 {/* Step 3: Quiz */}
                 {step === 'quiz' && questions.length > 0 && (
-                    <div className="glass-panel p-10 rounded-[2.5rem] shadow-2xl animate-fade-in relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-black/10">
+                    <div className="card p-10 shadow-2xl animate-fade-in relative overflow-hidden border-primary/10">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-slate-200 dark:bg-black/20">
                             <div
                                 className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.5)] transition-all duration-500"
                                 style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}
@@ -463,7 +463,7 @@ export default function QuizPage() {
                                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center font-black text-primary">
                                     {currentQ + 1}
                                 </div>
-                                <span className="text-slate-500 dark:text-blue-300 font-bold uppercase tracking-widest text-xs">Question {currentQ + 1} of {questions.length}</span>
+                                <span className="text-slate-600 dark:text-blue-300 font-black uppercase tracking-widest text-[10px]">Question {currentQ + 1} / {questions.length}</span>
                             </div>
                             <div className="px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-xs font-black text-primary animate-pulse">
                                 IN PROGRESS
@@ -484,7 +484,7 @@ export default function QuizPage() {
                                         onClick={() => handleAnswer(i)}
                                         className={`w-full text-left p-5 rounded-2xl border-2 transition-all duration-300 group hover-tilt ${answers[currentQ] === i
                                             ? 'border-primary bg-primary/10 shadow-xl shadow-primary/10 scale-[1.02]'
-                                            : 'border-white/10 dark:border-white/5 bg-white/5 dark:bg-black/10 hover:border-primary/30'
+                                            : 'border-slate-200 dark:border-white/5 bg-slate-100/50 dark:bg-black/10 hover:border-primary/30'
                                             }`}
                                     >
                                         <div className="flex items-center gap-4">
@@ -596,11 +596,11 @@ export default function QuizPage() {
                                 <div className="flex justify-center gap-8 mt-2">
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 rounded-full bg-primary" />
-                                        <span className="text-sm font-bold text-slate-500 dark:text-blue-200/60">Correct</span>
+                                        <span className="text-sm font-black text-slate-700 dark:text-blue-200/60">Correct</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 rounded-full bg-red-500" />
-                                        <span className="text-sm font-bold text-slate-500 dark:text-blue-200/60">Incorrect</span>
+                                        <span className="text-sm font-black text-slate-700 dark:text-blue-200/60">Incorrect</span>
                                     </div>
                                 </div>
                             </div>
@@ -635,11 +635,11 @@ export default function QuizPage() {
                                                     {r.is_correct ? 'Mastered' : 'Needs Review'}
                                                 </span>
                                             </div>
-                                            <p className="text-slate-600 dark:text-blue-100/70 font-medium leading-relaxed">{q.question}</p>
+                                            <p className="text-slate-700 dark:text-blue-100/70 font-medium leading-relaxed">{q.question}</p>
                                             {!r.is_correct && (
                                                 <div className="pt-4 border-t border-red-500/10 mt-2">
-                                                    <div className="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Correct Solution</div>
-                                                    <div className="text-emerald-500 font-bold">{correctAnswerText}</div>
+                                                    <div className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 mb-1 tracking-widest">Correct Solution</div>
+                                                    <div className="text-emerald-600 dark:text-emerald-500 font-bold">{correctAnswerText}</div>
                                                 </div>
                                             )}
                                         </div>

@@ -12,8 +12,8 @@ export default function Navbar() {
 
     const links = [
         { href: '/', label: 'Home' },
-        { href: '/generator', label: 'Generate Quiz' },
         { href: '/quiz', label: 'Take Quiz' },
+        { href: '/generator', label: 'Generate' },
         { href: '/about', label: 'About' },
     ]
 
@@ -40,9 +40,9 @@ export default function Navbar() {
                             <Link
                                 key={link.href}
                                 href={link.href}
-                                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${isActive(link.href)
-                                    ? 'bg-primary/10 text-primary shadow-sm border border-primary/20'
-                                    : 'text-slate-600 dark:text-blue-200/70 hover:bg-primary/5 hover:text-primary'
+                                className={`px-5 py-2.5 rounded-xl text-sm font-black transition-all ${isActive(link.href)
+                                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                                    : 'text-slate-900 dark:text-blue-200/70 hover:bg-primary/5 hover:text-primary'
                                     }`}
                             >
                                 {link.label}
@@ -54,7 +54,7 @@ export default function Navbar() {
                     <div className="hidden md:flex items-center gap-4">
                         <Link
                             href="/login"
-                            className="text-sm font-bold text-slate-600 dark:text-blue-200/80 hover:text-primary px-4 py-2 transition-colors"
+                            className="text-sm font-black text-slate-900 dark:text-blue-200/80 hover:text-primary px-4 py-2 transition-colors"
                         >
                             Log in
                         </Link>

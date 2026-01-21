@@ -31,12 +31,12 @@
   --primary-hover: #2563eb;
   --secondary: #64748b;
   --accent: #0ea5e9;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --border-color: rgba(59, 130, 246, 0.1);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --border-color: rgba(59, 130, 246, 0.2);
   --selection-bg: rgba(59, 130, 246, 0.1);
   --glass-bg: rgba(255, 255, 255, 0.9);
-  --glass-border: rgba(59, 130, 246, 0.1);
+  --glass-border: rgba(59, 130, 246, 0.2);
   --glow-color: rgba(59, 130, 246, 0.1);
 }
 
