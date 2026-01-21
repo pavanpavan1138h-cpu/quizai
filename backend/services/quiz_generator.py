@@ -14,7 +14,7 @@ import html
 
 class QuizGenerator:
     def __init__(self):
-        print("Initializing Quiz Generator with Gemini API...")
+        print("Initializing Enhanced Quiz Generator with Gemini API...")
         self.api_key = os.getenv("GEMINI_API_KEY")
         self.models_to_try = []
 
@@ -24,7 +24,7 @@ class QuizGenerator:
             try:
                 genai.configure(api_key=self.api_key)
                 
-                # 1. List available models
+                # List available models
                 available_models = []
                 try:
                     for m in genai.list_models():
@@ -33,35 +33,27 @@ class QuizGenerator:
                     print(f"Available models: {available_models}")
                 except Exception as e:
                     print(f"Could not list models: {e}")
-                    # Fallback list if listing fails
                     available_models = ["models/gemini-1.5-flash", "models/gemini-pro"]
 
-                # 2. Build prioritized list of usable models
-                # Priority: Flash (fast/cheap) -> Pro (better) -> Legacy
-                # We prioritize newer flash models as they are usually most generous with free tier
+                # Build prioritized list - prefer flash models for free tier
                 candidates = [
+                    "gemini-2.0-flash",
                     "gemini-1.5-flash", 
                     "gemini-flash",
-                    "gemini-2.0-flash", 
                     "gemini-1.5-pro",
                     "gemini-pro"
                 ]
                 
                 self.models_to_try = []
-                
-                # Add matched candidates first
                 for candidate in candidates:
                     for m in available_models:
                         if candidate in m and m not in self.models_to_try:
                             self.models_to_try.append(m)
                 
-                # Add any remaining available models that weren't in our candidate list
-                # This ensures we don't miss any obscure working model associated with the key
                 for m in available_models:
                     if m not in self.models_to_try:
                         self.models_to_try.append(m)
                 
-                # If list is empty (listing failed + no fallback matches), force some defaults
                 if not self.models_to_try:
                     self.models_to_try = ["models/gemini-1.5-flash", "models/gemini-pro"]
                     
@@ -71,7 +63,7 @@ class QuizGenerator:
                 print(f"Error configuring Gemini API: {e}")
                 self.models_to_try = []
 
-        # Local AI State
+        # Local AI State (fallback)
         self.local_tokenizer = None
         self.local_model = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -81,8 +73,8 @@ class QuizGenerator:
         """Lazy initialization of local AI model"""
         if self.local_model is None:
             try:
-                print("Loading local AI model (google/flan-t5-small)...")
-                model_name = "google/flan-t5-small"
+                print("Loading local AI model (google/flan-t5-base)...")
+                model_name = "google/flan-t5-base"  # Upgraded from small
                 self.local_tokenizer = T5Tokenizer.from_pretrained(model_name)
                 self.local_model = T5ForConditionalGeneration.from_pretrained(model_name).to(self.device)
                 print("Local AI model loaded successfully")
@@ -92,137 +84,358 @@ class QuizGenerator:
         return True
 
     def generate_quiz(self, topics: List[str], context: str = "", num_questions: int = 10, difficulty: str = "medium", bloom_level: str = "Mixed") -> Dict:
-        """Generate quiz questions using Gemini API, Local AI, or External APIs"""
+        """Generate high-quality quiz questions using AI"""
         print(f"Generating {num_questions} questions ({bloom_level}) for topics: {topics[:3]}...")
         
-        # 1. Try External API for general topics if Gemini is missing or as a mix-in
-        if bloom_level == "None" and random.random() < 0.3: # 30% chance to use external trivia for standard quizzes
-             external = self._fetch_external_trivia(num_questions)
-             if external: return external
-
-        # 2. Try Gemini if available
+        # Try Gemini first (primary - best quality)
         if self.models_to_try:
-            prompt = self._create_prompt(topics, context, num_questions, difficulty, bloom_level)
-            
-            for model_name in self.models_to_try:
-                print(f"Attempting generation with model: {model_name}")
-                for attempt in range(2): 
-                    try:
-                        model = genai.GenerativeModel(model_name)
-                        response = model.generate_content(prompt)
-                        return self._parse_gemini_response(response.text, topics, difficulty)
-                    except exceptions.ResourceExhausted:
-                        print(f"Rate limit hit for {model_name}.")
-                        break 
-                    except Exception as e:
-                        print(f"Error with {model_name}: {e}")
-                        if attempt == 0: time.sleep(1)
-
-        # 2. Try Local AI if Gemini failed or unavailable
+            result = self._generate_with_gemini(topics, context, num_questions, difficulty, bloom_level)
+            if result and len(result.get("questions", [])) >= num_questions // 2:
+                return result
+        
+        # Try external trivia for general knowledge (secondary)
+        if not context or len(context.strip()) < 100:
+            external = self._fetch_external_trivia(num_questions)
+            if external:
+                return external
+        
+        # Local AI fallback (tertiary)
         if self._init_local_model():
             print("Using local AI for question generation...")
             return self._generate_local_quiz(topics, context, num_questions, difficulty, bloom_level)
             
-        # 3. Last resort fallback
-        print("All AI attempts failed. Using rule-based fallback.")
+        # Last resort fallback
+        print("All AI attempts failed. Using enhanced rule-based fallback.")
         return self._generate_fallback_quiz(topics, num_questions, difficulty)
 
-    def _create_prompt(self, topics: List[str], context: str, num_questions: int, difficulty: str, bloom_level: str) -> str:
-        topics_str = ", ".join(topics)
-        context_preview = context[:4000] # Cap context for token limits
+    def _generate_with_gemini(self, topics: List[str], context: str, num_questions: int, difficulty: str, bloom_level: str) -> Optional[Dict]:
+        """Generate questions using Gemini with enhanced Chain-of-Thought prompting"""
         
-        bloom_instructions = {
-            "None": "Standard generation. Create clear, factual, and conceptual questions across the topic.",
-            "Remember": "Focus on recall of facts and basic concepts. Use terms like 'Define', 'List', 'State'.",
-            "Understand": "Explain ideas or concepts. Use terms like 'Classify', 'Describe', 'Discuss'.",
-            "Apply": "Use information in new situations. Use terms like 'Calculate', 'Solve', 'Illustrate'.",
-            "Analyze": "Draw connections among ideas. Use terms like 'Differentiate', 'Organize', 'Contrast'.",
-            "Evaluate": "CRITICAL THINKING: Requires assessment. Ask the user to judge, critique, or justify a stand. Use terms like 'Evaluate the impact', 'Critique the strategy', 'Assess the effectiveness'. Options should be complex rationales.",
-            "Mixed": "Vary the depth across the questions from basic recall to complex analysis."
-        }.get(bloom_level, "Vary the depth of questions.")
+        prompt = self._create_enhanced_prompt(topics, context, num_questions, difficulty, bloom_level)
+        
+        for model_name in self.models_to_try:
+            print(f"Attempting generation with model: {model_name}")
+            for attempt in range(2):
+                try:
+                    model = genai.GenerativeModel(model_name)
+                    response = model.generate_content(
+                        prompt,
+                        generation_config=genai.types.GenerationConfig(
+                            temperature=0.7,
+                            top_p=0.9,
+                            max_output_tokens=4096
+                        )
+                    )
+                    result = self._parse_gemini_response(response.text, topics, difficulty, bloom_level)
+                    if result and result.get("questions"):
+                        print(f"Successfully generated {len(result['questions'])} questions with {model_name}")
+                        return result
+                except exceptions.ResourceExhausted:
+                    print(f"Rate limit hit for {model_name}.")
+                    break
+                except Exception as e:
+                    print(f"Error with {model_name}: {e}")
+                    if attempt == 0:
+                        time.sleep(1)
+        return None
 
-        return f"""
-        You are an expert quiz generator. Create {num_questions} MCQs based on the provided context.
+    def _create_enhanced_prompt(self, topics: List[str], context: str, num_questions: int, difficulty: str, bloom_level: str) -> str:
+        """Create an enhanced Chain-of-Thought prompt for high-quality question generation"""
         
-        Context:
-        {context_preview}
+        topics_str = ", ".join(topics[:10])
+        context_preview = context[:6000] if context else ""
         
-        Focus Topics: {topics_str}
-        Bloom's Level: {bloom_level}
-        Depth Instruction: {bloom_instructions}
+        difficulty_guide = {
+            "easy": "Test basic recall and fundamental understanding. Use straightforward language.",
+            "medium": "Test application and analysis. Require connecting multiple concepts.",
+            "hard": "Test evaluation and synthesis. Require deep understanding and critical thinking."
+        }.get(difficulty, "Mix of difficulty levels.")
         
-        JSON constraints:
-        - ONLY return raw JSON array.
-        - Fields: "question", "options" (4 strings), "correct_answer" (index).
-        - No markdown, no HTML tags (remove artifacts like <a>), no math symbols ($).
-        - For 'Evaluate' level, ensure the question requires JUDGMENT based on the text.
-        """
+        bloom_guide = {
+            "Remember": "Focus on factual recall: Define, List, State, Identify.",
+            "Understand": "Test comprehension: Explain, Describe, Summarize, Interpret.",
+            "Apply": "Use knowledge in new situations: Calculate, Solve, Demonstrate, Apply.",
+            "Analyze": "Break down concepts: Compare, Contrast, Differentiate, Organize.",
+            "Evaluate": "Make judgments: Assess, Critique, Justify, Evaluate effectiveness.",
+            "Mixed": "Vary across Bloom's levels for comprehensive assessment."
+        }.get(bloom_level, "Mix of cognitive levels.")
 
-    def _extract_complex_terms(self, text: str) -> List[str]:
-        """Ported from SocratAI: extract meaningful technical anchors"""
-        terms = re.findall(r'\b[A-Z][a-z]{5,}\b|\b\w{11,}\b', text)
-        stop_words = {'However', 'Because', 'Therefore', 'Although', 'Unlike', 'Finally', 'Moreover', 'Quantum'}
-        return list(set([t for t in terms if t not in stop_words]))
+        return f'''You are an expert academic question writer. Your task is to create {num_questions} high-quality multiple choice questions.
+
+=== SOURCE MATERIAL ===
+Topics: {topics_str}
+
+Context:
+{context_preview if context_preview else "No specific context provided. Generate questions based on general knowledge of the topics."}
+
+=== GENERATION REQUIREMENTS ===
+
+DIFFICULTY: {difficulty.upper()}
+{difficulty_guide}
+
+BLOOM'S LEVEL: {bloom_level}
+{bloom_guide}
+
+=== CRITICAL QUALITY RULES ===
+
+1. **SPECIFIC QUESTIONS**: Each question must test a specific fact, concept, or relationship from the material.
+   - BAD: "Why is Machine Learning important?"
+   - GOOD: "What is the primary purpose of the activation function in a neural network?"
+
+2. **PLAUSIBLE DISTRACTORS**: All 4 options must be:
+   - From the SAME domain/category (all are algorithms, all are numbers, all are processes)
+   - Grammatically consistent with the question stem
+   - Similar in length and complexity
+   - Actually wrong but believably so
+   
+   - BAD OPTIONS: "It tastes good", "It causes global warming", "None of the above"
+   - GOOD OPTIONS: For a question about neural network activation functions:
+     * "To introduce non-linearity into the network" (CORRECT)
+     * "To normalize the input values between layers"
+     * "To reduce the number of parameters in the model"
+     * "To calculate the loss function gradient"
+
+3. **UNAMBIGUOUS ANSWERS**: Only one option should be definitively correct.
+
+4. **NO TRICKS**: Avoid "All of the above", "None of the above", or trick questions.
+
+5. **CONTEXT-GROUNDED**: If context is provided, questions MUST be answerable from that context.
+
+=== THINK STEP BY STEP ===
+
+For each question:
+1. Identify a specific testable fact or concept from the material
+2. Formulate a clear, unambiguous question
+3. Write the correct answer
+4. Generate 3 plausible but incorrect alternatives from the same domain
+5. Verify only one answer is correct
+6. Shuffle options randomly
+
+=== OUTPUT FORMAT ===
+
+Return ONLY a valid JSON array. No markdown, no explanation, no code blocks.
+
+[
+  {{
+    "question": "Clear, specific question text ending with a question mark?",
+    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "correct_answer": 0
+  }}
+]
+
+Where correct_answer is the 0-indexed position (0, 1, 2, or 3) of the correct option.
+
+Generate exactly {num_questions} questions now:'''
+
+    def extract_topics(self, context: str) -> List[str]:
+        """Intelligently extract granular topics from syllabus/text using AI"""
+        print(f"Extracting topics from context (length: {len(context)})...")
+        context_preview = context[:8000]
+        
+        if self.models_to_try:
+            prompt = f'''Analyze this academic text and extract specific, testable topics.
+
+TEXT:
+{context_preview}
+
+EXTRACTION RULES:
+1. Extract SPECIFIC concepts, not generic categories
+   - BAD: "Mathematics", "Chapter 1", "Introduction"
+   - GOOD: "Gaussian Elimination", "Matrix Inverse", "Eigenvalue Decomposition"
+
+2. Focus on TESTABLE items that could become quiz questions
+3. Include technical terms, theorems, algorithms, definitions
+4. Extract 10-25 specific topics
+5. Ignore: dates, page numbers, instructor names, logistics
+
+Return ONLY a JSON array of strings. No explanation.
+Example: ["Backpropagation", "Gradient Descent", "Learning Rate", "Overfitting"]'''
+            
+            for model_name in self.models_to_try:
+                try:
+                    model = genai.GenerativeModel(model_name)
+                    response = model.generate_content(prompt)
+                    
+                    match = re.search(r'\[.*\]', response.text, re.DOTALL)
+                    if match:
+                        topics = json.loads(match.group())
+                        if topics and isinstance(topics, list):
+                            # Clean up topics
+                            cleaned = []
+                            for t in topics:
+                                if isinstance(t, str):
+                                    t = re.sub(r'^(Topic|Unit|Chapter|Module|Section)\s*\d*[:\.-]?\s*', '', t, flags=re.IGNORECASE)
+                                    t = re.sub(r'^\d+[\)\.]\s*', '', t)
+                                    t = t.strip()
+                                    if len(t) > 3 and t not in cleaned:
+                                        cleaned.append(t)
+                            
+                            print(f"Extracted {len(cleaned)} topics: {cleaned[:5]}...")
+                            return cleaned[:25]
+                except Exception as e:
+                    print(f"Topic extraction error with {model_name}: {e}")
+                    continue
+
+        # Fallback: Extract key terms using NLP patterns
+        return self._extract_topics_regex(context_preview)
+
+    def _extract_topics_regex(self, text: str) -> List[str]:
+        """Fallback topic extraction using regex patterns"""
+        # Find capitalized terms, technical terms, etc.
+        patterns = [
+            r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b',  # Title Case phrases
+            r'\b[A-Z]{2,}(?:\s+[A-Z]{2,})*\b',  # Acronyms
+            r'\b\w+(?:tion|ment|ity|ism|ology)\b',  # Common noun suffixes
+        ]
+        
+        topics = set()
+        for pattern in patterns:
+            matches = re.findall(pattern, text)
+            for m in matches:
+                if len(m) > 5 and len(m) < 50:
+                    topics.add(m.strip())
+        
+        return list(topics)[:20]
+
+    def _parse_gemini_response(self, response_text: str, topics: List[str], difficulty: str, bloom_level: str) -> Dict:
+        """Parse and validate Gemini response"""
+        try:
+            # Clean up response
+            clean_text = response_text.strip()
+            clean_text = re.sub(r'^```(?:json)?\s*', '', clean_text)
+            clean_text = re.sub(r'\s*```$', '', clean_text)
+            clean_text = clean_text.strip()
+            
+            # Find JSON array
+            match = re.search(r'\[[\s\S]*\]', clean_text)
+            if not match:
+                print(f"No JSON array found in response")
+                return None
+                
+            questions = json.loads(match.group())
+            
+            # Validate each question
+            valid_questions = []
+            for q in questions:
+                if self._validate_question(q):
+                    valid_questions.append(q)
+                else:
+                    print(f"Filtered out invalid question: {q.get('question', 'N/A')[:50]}...")
+            
+            print(f"Validated {len(valid_questions)}/{len(questions)} questions")
+            
+            return {
+                "questions": valid_questions,
+                "difficulty": difficulty,
+                "bloom_level": bloom_level,
+                "topic_count": len(topics)
+            }
+        except json.JSONDecodeError as e:
+            print(f"JSON parse error: {e}")
+            print(f"Response preview: {response_text[:200]}...")
+            return None
+        except Exception as e:
+            print(f"Parse error: {e}")
+            return None
+
+    def _validate_question(self, q: Dict) -> bool:
+        """Validate a single question for quality"""
+        # Required fields
+        if not all(k in q for k in ["question", "options", "correct_answer"]):
+            return False
+        
+        # Must have exactly 4 options
+        if not isinstance(q["options"], list) or len(q["options"]) != 4:
+            return False
+        
+        # Correct answer must be valid index
+        if not isinstance(q["correct_answer"], int) or q["correct_answer"] not in [0, 1, 2, 3]:
+            return False
+        
+        # Question must end with question mark or be substantial
+        question = q["question"]
+        if len(question) < 15:
+            return False
+        
+        # Filter out nonsensical options
+        bad_phrases = [
+            "tastes good", "causes global warming", "holiday destination",
+            "musical instrument", "type of food", "color", "edible",
+            "fictional character", "biological organism", "none of the above",
+            "all of the above", "not important", "unrelated"
+        ]
+        
+        for opt in q["options"]:
+            opt_lower = opt.lower()
+            for bad in bad_phrases:
+                if bad in opt_lower:
+                    print(f"Filtered: nonsensical option '{opt}'")
+                    return False
+        
+        # All options must be non-empty and reasonable length
+        for opt in q["options"]:
+            if not isinstance(opt, str) or len(opt.strip()) < 2 or len(opt) > 500:
+                return False
+        
+        return True
 
     def _generate_local_quiz(self, topics: List[str], context: str, num_questions: int, difficulty: str, bloom_level: str) -> Dict:
-        """Enhanced Local Model generation using Entity Anchors and Smarter Distractors"""
+        """Generate questions using local T5 model with improved prompts"""
         segments = [s.strip() for s in context.split('.') if len(s.strip()) > 60]
-        if not segments: segments = topics 
+        if not segments:
+            segments = [f"The concept of {t} is important in this field." for t in topics]
         random.shuffle(segments)
         
         questions = []
-        used_anchors = set()
         all_terms = self._extract_complex_terms(context)
-
+        
         for i in range(min(num_questions, len(segments))):
             seg = segments[i]
             
-            # 1. Select Anchor
-            candidates = self._extract_complex_terms(seg)
-            anchor = next((c for c in candidates if c not in used_anchors), None)
-            if not anchor:
-                anchor = random.choice(candidates) if candidates else (topics[i % len(topics)] if topics else "concept")
-            used_anchors.add(anchor)
-
-            # 2. Generate Question using Local AI
-            # Adjust prompt based on Bloom's
-            bloom_verb = {
-                "None": "Explain",
-                "Remember": "Recall", "Understand": "Describe", 
-                "Apply": "Apply", "Analyze": "Analyze", "Evaluate": "Assess"
-            }.get(bloom_level, "Explain")
+            # Extract key term from segment
+            seg_terms = self._extract_complex_terms(seg)
+            anchor = seg_terms[0] if seg_terms else (topics[i % len(topics)] if topics else "concept")
             
-            q_prompt = f"Context: {seg}. Task: As a professor, {bloom_verb} the importance of {anchor}:"
+            # Generate question using T5
+            q_prompt = f"Generate a quiz question about: {seg[:200]}"
             
-            inputs = self.local_tokenizer(q_prompt, return_tensors="pt", max_length=256, truncation=True).to(self.device)
-            with torch.no_grad():
-                outputs = self.local_model.generate(**inputs, max_length=64, do_sample=True, temperature=0.7)
-            question_text = self.local_tokenizer.decode(outputs[0], skip_special_tokens=True)
+            try:
+                inputs = self.local_tokenizer(q_prompt, return_tensors="pt", max_length=256, truncation=True).to(self.device)
+                with torch.no_grad():
+                    outputs = self.local_model.generate(**inputs, max_length=64, do_sample=True, temperature=0.8)
+                question_text = self.local_tokenizer.decode(outputs[0], skip_special_tokens=True)
+                
+                if len(question_text) < 20:
+                    question_text = f"What is the significance of {anchor} in the context of this material?"
+                
+                if not question_text.endswith("?"):
+                    question_text += "?"
+                
+            except Exception as e:
+                print(f"Local model error: {e}")
+                question_text = f"What is the key characteristic of {anchor}?"
             
-            # Fallback for short AI output
-            if len(question_text) < 15:
-                question_text = f"Based on the analysis of {anchor}, how would you describe its primary function?"
-
-            # 3. Smart Distractors (SocratAI logic)
-            # Find peers (terms from context that aren't the anchor)
+            # Generate plausible distractors from related terms
+            correct_answer = anchor
             peers = [p for p in all_terms if p.lower() != anchor.lower()]
-            options = [anchor]
             
-            # Select 3 distractors from peers
             if len(peers) >= 3:
-                options.extend(random.sample(peers, 3))
+                distractors = random.sample(peers, 3)
             else:
-                # Add generic academic-sounding fillers if context is thin
-                fillers = ["Systematic Variant", "Procedural Method", "Framework Component"]
-                options.extend(peers)
-                options.extend(fillers[:(4-len(options))])
+                # Generate conceptual distractors
+                distractors = [
+                    f"A variant of {anchor}",
+                    f"The inverse of {anchor}",
+                    f"An alternative to {anchor}"
+                ][:3-len(peers)] + peers
             
+            options = [correct_answer] + distractors[:3]
             random.shuffle(options)
             
             questions.append({
-                "question": question_text if "?" in question_text else question_text + "?",
+                "question": question_text,
                 "options": options[:4],
-                "correct_answer": options[:4].index(anchor)
+                "correct_answer": options.index(correct_answer)
             })
 
         return {
@@ -232,31 +445,16 @@ class QuizGenerator:
             "topic_count": len(topics)
         }
 
-    def _parse_gemini_response(self, response_text: str, topics: List[str], difficulty: str) -> Dict:
-        try:
-            # Clean up potential markdown code blocks
-            clean_text = response_text.replace("```json", "").replace("```", "").strip()
-            
-            questions = json.loads(clean_text)
-            
-            # Basic validation
-            valid_questions = []
-            for q in questions:
-                if "question" in q and "options" in q and "correct_answer" in q:
-                    if isinstance(q["options"], list) and len(q["options"]) == 4:
-                        valid_questions.append(q)
-            
-            return {
-                "questions": valid_questions,
-                "difficulty": difficulty,
-                "topic_count": len(topics)
-            }
-        except json.JSONDecodeError:
-            print(f"Failed to decode JSON from Gemini: {response_text[:100]}...")
-            return self._generate_fallback_quiz(topics, 1, difficulty)
+    def _extract_complex_terms(self, text: str) -> List[str]:
+        """Extract meaningful technical terms from text"""
+        # Find capitalized terms and technical words
+        terms = re.findall(r'\b[A-Z][a-z]{4,}\b|\b\w{10,}\b', text)
+        stop_words = {'However', 'Because', 'Therefore', 'Although', 'Unlike', 
+                      'Finally', 'Moreover', 'Furthermore', 'Nevertheless'}
+        return list(set([t for t in terms if t not in stop_words]))
 
     def _fetch_external_trivia(self, num_questions: int) -> Optional[Dict]:
-        """Fetch general trivia from Open Trivia DB as a fallback/alternative"""
+        """Fetch general trivia from Open Trivia DB"""
         try:
             print("Fetching questions from Open Trivia DB...")
             url = f"https://opentdb.com/api.php?amount={num_questions}&type=multiple"
@@ -280,7 +478,7 @@ class QuizGenerator:
                 return {
                     "questions": questions,
                     "difficulty": "mixed",
-                    "bloom_level": "None",
+                    "bloom_level": "Mixed",
                     "topic_count": 0
                 }
         except Exception as e:
@@ -288,25 +486,39 @@ class QuizGenerator:
         return None
 
     def _generate_fallback_quiz(self, topics: List[str], num_questions: int, difficulty: str) -> Dict:
-        """Simple rule-based fallback if API fails"""
+        """Enhanced rule-based fallback with better question templates"""
         questions = []
-        topic_count = len(topics)
+        topic_count = len(topics) if topics else 1
+        
+        # Better question templates
+        templates = [
+            ("What is the primary purpose of {topic}?",
+             ["To solve specific problems in the domain", "To provide a framework for analysis", 
+              "To establish foundational principles", "To enable practical applications"]),
+            ("Which characteristic best describes {topic}?",
+             ["It follows systematic methodologies", "It requires iterative refinement",
+              "It builds on established theories", "It enables measurable outcomes"]),
+            ("How does {topic} contribute to the field?",
+             ["By providing analytical frameworks", "By enabling practical solutions",
+              "By establishing theoretical foundations", "By facilitating understanding"]),
+        ]
         
         for i in range(num_questions):
-            topic = topics[i % topic_count] if topics else "General Knowledge"
+            topic = topics[i % topic_count] if topics else "the subject matter"
+            template = templates[i % len(templates)]
+            
+            question_text = template[0].format(topic=topic)
+            options = template[1].copy()
+            random.shuffle(options)
+            
             questions.append({
-                "question": f"What is a key aspect of {topic}?",
-                "options": [
-                    f"It is fundamental to the subject.",
-                    "It is unrelated.",
-                    "It is deprecated.",
-                    "None of the above."
-                ],
-                "correct_answer": 0
+                "question": question_text,
+                "options": options,
+                "correct_answer": 0  # First option after shuffle
             })
             
         return {
             "questions": questions,
             "difficulty": difficulty,
-            "topic_count": len(topics)
+            "topic_count": len(topics) if topics else 0
         }

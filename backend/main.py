@@ -51,11 +51,15 @@ async def upload_file(file: UploadFile = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
-        # Extract text using OCR
+        # Extract text using OCR/PDF
         extracted_text = ocr_service.extract_text(str(file_path))
         
-        # Extract topics
-        topics = ocr_service.extract_topics(extracted_text)
+        # Extract topics intelligently using AI
+        topics = quiz_generator.extract_topics(extracted_text)
+        
+        # Fallback to OCR service regex logic if AI failed
+        if not topics:
+            topics = ocr_service.extract_topics(extracted_text)
         
         # Store in database
         session_id = db.create_session(str(file_path), extracted_text, topics)
@@ -73,11 +77,15 @@ async def upload_file(file: UploadFile = File(...)):
 async def process_text(request: TextRequest):
     """Process direct syllabus text and extract topics"""
     try:
-        # Extract topics directly from text
-        topics = ocr_service.extract_topics(request.text)
+        # Extract topics intelligently using AI
+        topics = quiz_generator.extract_topics(request.text)
         
-        # Store in database (with dummy path)
-        session_id = db.create_session("direct_text_input", request.text, topics)
+        # Fallback to OCR service regex logic if AI failed
+        if not topics:
+            topics = ocr_service.extract_topics(request.text)
+            
+        # Store session (use placeholder path for direct text)
+        session_id = db.create_session("direct_text", request.text, topics)
         
         return UploadResponse(
             session_id=session_id,
