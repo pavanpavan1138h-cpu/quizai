@@ -7,50 +7,55 @@
   --primary-light: #818cf8;
   --primary-dark: #4f46e5;
   --accent: #10b981;
-  --background: #fafafa;
-  --card: #ffffff;
   --text-primary: #1e293b;
   --text-secondary: #64748b;
-  --border: #e2e8f0;
 }
 
 body {
   color: var(--text-primary);
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+  /* "Light mixed white theme" requested by user */
+  background: linear-gradient(to bottom right, #ffffff, #f8fafc, #eff6ff);
   min-height: 100vh;
 }
 
 /* Light theme card styles */
 .card {
-  @apply bg-white rounded-xl shadow-sm border border-gray-100;
+  @apply bg-white rounded-2xl shadow-sm border border-gray-100 transition-all duration-200;
 }
 
 .card-hover {
-  @apply hover:shadow-md hover:border-gray-200 transition-all duration-200;
+  @apply hover:shadow-md hover:border-indigo-100 hover:-translate-y-0.5;
 }
 
 /* Button styles */
 .btn-primary {
-  @apply bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2.5 px-5 rounded-lg transition-all duration-200;
+  @apply bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 active:scale-95;
 }
 
 .btn-secondary {
-  @apply bg-white hover:bg-gray-50 text-gray-700 font-medium py-2.5 px-5 rounded-lg border border-gray-200 transition-all duration-200;
+  @apply bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200;
 }
 
 .btn-accent {
-  @apply bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2.5 px-5 rounded-lg transition-all duration-200;
+  @apply bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200;
 }
 
 /* Input styles */
 .input {
-  @apply w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all;
+  @apply w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all bg-white;
 }
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in {
@@ -58,10 +63,17 @@ body {
 }
 
 @keyframes pulse-slow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .animate-pulse-slow {
-  animation: pulse-slow 2s ease-in-out infinite;
+  animation: pulse-slow 3s ease-in-out infinite;
 }
