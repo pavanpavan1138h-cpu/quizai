@@ -35,8 +35,9 @@ class QuizGenerator:
                     print(f"Could not list models: {e}")
                     available_models = ["models/gemini-1.5-flash", "models/gemini-pro"]
 
-                # Build prioritized list - prefer flash models for free tier
+                # Build prioritized list - prefer lite/flash models for speed
                 candidates = [
+                    "gemini-2.0-flash-lite",  # Fastest
                     "gemini-2.0-flash",
                     "gemini-1.5-flash", 
                     "gemini-flash",
