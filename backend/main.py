@@ -18,7 +18,7 @@ from database.database import Database
 from models.schemas import (
     UploadResponse, TopicListResponse, QuizRequest, 
     QuizResponse, QuizSubmission, SubmissionResponse,
-    PerformanceStats, TextRequest
+    PerformanceStats, TextRequest, ParseQuizRequest
 )
 
 app = FastAPI(title="Syllabus to Quiz API")
@@ -92,6 +92,33 @@ async def process_text(request: TextRequest):
             message="Text processed successfully",
             topics=topics
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/parse-quiz", response_model=QuizResponse)
+async def parse_quiz(request: ParseQuizRequest):
+    """Parse existing questions from text"""
+    try:
+        # Create a session for this parsed content
+        session_id = db.create_session("parsed_content", request.text, ["Parsed Questions"])
+        
+        # Parse questions using AI
+        quiz = quiz_generator.parse_questions_from_text(request.text)
+        
+        if not quiz or not quiz.get("questions"):
+            raise HTTPException(status_code=400, detail="Could not parse any questions from the provided text.")
+            
+        # Store quiz in database
+        quiz_id = db.save_quiz(session_id, quiz, "parsed")
+        
+        return QuizResponse(
+            quiz_id=quiz_id,
+            questions=quiz["questions"],
+            session_id=session_id
+        )
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

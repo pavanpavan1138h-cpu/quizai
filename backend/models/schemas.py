@@ -14,8 +14,12 @@ class TopicListResponse(BaseModel):
 
 class QuizRequest(BaseModel):
     session_id: str
-    num_questions: Optional[int] = 18
+    num_questions: Optional[int] = 10
     bloom_level: Optional[str] = "Mixed"
+
+class ParseQuizRequest(BaseModel):
+    text: str
+    num_questions: Optional[int] = None
 
 
 class TextRequest(BaseModel):

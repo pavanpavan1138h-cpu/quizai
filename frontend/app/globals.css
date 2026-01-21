@@ -3,47 +3,72 @@
 @tailwind utilities;
 
 :root {
-  --primary: #6366f1;
-  --primary-light: #818cf8;
-  --primary-dark: #4f46e5;
-  --accent: #10b981;
+  /* Default Dark Mode Variables */
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --card-bg: rgba(15, 23, 42, 0.5);
+  --primary: #3b82f6;
+  --primary-light: #60a5fa;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: rgba(255, 255, 255, 0.1);
+}
+
+.light {
+  /* Light Mode Variables */
+  --background: #f8fafc;
+  --foreground: #1e293b;
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --primary: #2563eb;
+  --primary-light: #3b82f6;
   --text-primary: #1e293b;
   --text-secondary: #64748b;
+  --border-color: rgba(0, 0, 0, 0.1);
 }
 
 body {
   color: var(--text-primary);
-  /* "Sky blue theme" requested by user */
-  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
-  /* sky-100 to blue-100 */
+  background: var(--background);
+  transition: background-color 0.3s ease, color 0.3s ease;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
-/* Light theme card styles */
+/* Override gradient for dark mode only if needed, or make it dynamic */
+:root body {
+  background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #172554 100%);
+}
+
+.light body {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bfdbfe 100%);
+}
+
+/* Glassmorphic Card Styles */
 .card {
-  @apply bg-white rounded-2xl shadow-sm border border-gray-100 transition-all duration-200;
+  @apply backdrop-blur-md rounded-2xl shadow-lg border border-white/10 transition-all duration-300;
+  background: var(--card-bg);
 }
 
 .card-hover {
-  @apply hover:shadow-md hover:border-indigo-100 hover:-translate-y-0.5;
+  @apply hover:shadow-blue-500/20 hover:border-blue-500/30 hover:-translate-y-1;
 }
 
 /* Button styles */
 .btn-primary {
-  @apply bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 active:scale-95;
+  @apply bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-6 rounded-xl shadow-lg shadow-blue-900/50 hover:shadow-blue-600/50 transition-all duration-300 active:scale-95 border border-blue-500/50;
 }
 
 .btn-secondary {
-  @apply bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-200;
+  @apply bg-white/10 hover:bg-white/20 text-white font-medium py-3 px-6 rounded-xl border border-white/10 hover:border-white/30 backdrop-blur-sm transition-all duration-300;
 }
 
 .btn-accent {
-  @apply bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200;
+  @apply bg-sky-600 hover:bg-sky-500 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition-all duration-300;
 }
 
 /* Input styles */
 .input {
-  @apply w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all bg-white;
+  @apply w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all;
 }
 
 /* Animations */
@@ -60,7 +85,23 @@ body {
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.4s ease-out;
+  animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }
 
 @keyframes pulse-slow {
@@ -68,13 +109,45 @@ body {
   0%,
   100% {
     opacity: 1;
+    transform: scale(1);
   }
 
   50% {
-    opacity: 0.7;
+    opacity: 0.8;
+    transform: scale(1.05);
   }
 }
 
 .animate-pulse-slow {
-  animation: pulse-slow 3s ease-in-out infinite;
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
 }

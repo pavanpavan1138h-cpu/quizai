@@ -523,3 +523,46 @@ Example: ["Backpropagation", "Gradient Descent", "Learning Rate", "Overfitting"]
             "difficulty": difficulty,
             "topic_count": len(topics) if topics else 0
         }
+
+    def parse_questions_from_text(self, text: str) -> Dict:
+        """Parse existing questions from unstructured text using AI"""
+        print(f"Parsing questions from text (length: {len(text)})...")
+        
+        prompt = '''You are an expert quiz parser. extract multiple choice questions from the following text.
+        
+        TEXT:
+        ''' + text[:15000] + '''
+        
+        RULES:
+        1. Identify questions, options, and correct answers.
+        2. If correct answer is not explicitly marked, infer it or default to the first option (and shuffle later).
+        3. If no options are provided, GENERATE 3 plausible distractors.
+        4. Fix any typos or formatting issues.
+        
+        OUTPUT FORMAT:
+        Return ONLY a JSON array:
+        [
+          {
+            "question": "Question text?",
+            "options": ["A", "B", "C", "D"],
+            "correct_answer": 0
+          }
+        ]
+        '''
+        
+        # Try Gemini first
+        if self.models_to_try:
+            for model_name in self.models_to_try:
+                try:
+                    model = genai.GenerativeModel(model_name)
+                    response = model.generate_content(prompt)
+                    result = self._parse_gemini_response(response.text, ["parsed_content"], "mixed", "Mixed")
+                    if result and result.get("questions"):
+                        return result
+                except Exception as e:
+                    print(f"Parse error with {model_name}: {e}")
+                    
+        # Fallback for parsing (simple regex if AI fails currently not implemented fully for unstructured, 
+        # but could rely on structured format)
+        print("AI parsing failed")
+        return {"questions": []}
