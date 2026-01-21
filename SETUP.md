@@ -1,90 +1,70 @@
-# Setup Instructions
+# 🛠 SocratAI Setup Guide
+
+This guide provides the steps to set up and run SocratAI locally for development using VS Code.
 
 ## Prerequisites
+- **Node.js**: v18.0+
+- **Python**: v3.9+
+- **VS Code**: Latest version recommended
+- **Gemini API Key**: Obtain one from [Google AI Studio](https://aistudio.google.com/)
 
-- Python 3.8 or higher
-- Node.js 18 or higher
-- npm or yarn
-- Internet connection (for first-time model download)
+---
 
-## Backend Setup
+## 🏗 Backend Setup
 
-1. Navigate to backend directory:
-```bash
-cd backend
+1. **Open Workspace**: Open the `backend` folder in VS Code.
+2. **Virtual Environment**:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+3. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. **Environment Variables**:
+   Create a `.env` file or export the variable:
+   ```bash
+   export GEMINI_API_KEY=AIza...
+   ```
+5. **Run Server**:
+   ```bash
+   python main.py
+   ```
+   *Backend will be available at `http://localhost:8000`*
+
+---
+
+## 🎨 Frontend Setup
+
+1. **Open Workspace**: Open the `frontend` folder in VS Code.
+2. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+3. **Run Dev Server**:
+   ```bash
+   npm run dev
+   ```
+   *Frontend will be available at `http://localhost:3000`*
+
+---
+
+## 🔍 VS Code Recommended Configuration
+
+To get the best experience while working on SocratAI, ensure your VS Code settings include:
+
+```json
+{
+  "editor.formatOnSave": true,
+  "python.analysis.typeCheckingMode": "basic",
+  "tailwindCSS.includeLanguages": {
+    "plaintext": "html"
+  }
+}
 ```
 
-2. Create virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-**Note**: The first time you run the backend, it will attempt to download the Phi-3 model (~7GB). If this fails or you want to use rule-based generation (works offline), the system will automatically fall back.
-
-4. Run the backend server:
-```bash
-python main.py
-```
-
-The backend will run on `http://localhost:8000`
-
-## Frontend Setup
-
-1. Navigate to frontend directory:
-```bash
-cd frontend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Create `.env.local` file (optional, defaults work):
-```bash
-echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
-```
-
-4. Run the development server:
-```bash
-npm run dev
-```
-
-The frontend will run on `http://localhost:3000`
-
-## Usage
-
-1. Open `http://localhost:3000` in your browser
-2. Upload an image of a syllabus or topic list
-3. View extracted topics
-4. Take the initial quiz (15-20 MCQs)
-5. View your performance and take adaptive quizzes
-6. Check your statistics dashboard
-
-## Troubleshooting
-
-### Model Download Issues
-If Phi-3 model fails to download:
-- The system automatically falls back to rule-based quiz generation
-- Rule-based generation works offline and doesn't require the model
-- To retry model download, ensure you have:
-  - Stable internet connection
-  - At least 10GB free disk space
-  - Sufficient RAM (8GB+ recommended)
-
-### OCR Issues
-If text extraction fails:
-- Ensure the image is clear and readable
-- Try images with better contrast
-- Supported formats: PNG, JPG, JPEG
-
-### Port Conflicts
-If ports 3000 or 8000 are in use:
-- Change frontend port: `npm run dev -- -p 3001`
-- Change backend port in `main.py`: `uvicorn.run(app, host="0.0.0.0", port=8001)`
+## 🐛 Troubleshooting
+- **CORS Errors**: Ensure the frontend is running on `http://localhost:3000` as the backend expects this origin.
+- **API Issues**: Verify your `GEMINI_API_KEY` is active and has sufficient quota.
+- **Port Conflicts**: If port 3000 or 8000 is taken, the startup scripts will warn you.
