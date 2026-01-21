@@ -9,8 +9,8 @@ interface Question {
     correct_answer: number
 }
 
-// Extended step flow
-type Step = 'input' | 'topics' | 'config' | 'questions'
+// Flow: input -> config -> (optional: topics) -> questions
+type Step = 'input' | 'config' | 'topics' | 'questions'
 
 export default function GeneratorPage() {
     const [step, setStep] = useState<Step>('input')
@@ -28,7 +28,8 @@ export default function GeneratorPage() {
 
     // Configuration
     const [numQuestions, setNumQuestions] = useState(10)
-    const [bloomLevel, setBloomLevel] = useState('Mixed')
+    const [bloomChoice, setBloomChoice] = useState<'none' | 'mixed' | 'specific'>('mixed') // none, mixed, specific
+    const [specificBloom, setSpecificBloom] = useState('Remember')
 
     // --- Handlers ---
 
@@ -48,7 +49,7 @@ export default function GeneratorPage() {
             setSessionId(result.session_id)
             setAllTopics(result.topics || [])
             setSelectedTopics(result.topics || []) // Select all by default
-            setStep('topics')
+            setStep('config')
         } catch (err: any) {
             setError(err.response?.data?.detail || err.message || 'Failed to process content')
         } finally {
@@ -77,7 +78,12 @@ export default function GeneratorPage() {
         setLoading(true)
         setError(null)
         try {
-            const result = await generateQuiz(sessionId, numQuestions, bloomLevel)
+            // Determine final Bloom's level string
+            let finalBloom = 'Mixed'
+            if (bloomChoice === 'none') finalBloom = 'None' // Backend might treat as default
+            if (bloomChoice === 'specific') finalBloom = specificBloom
+
+            const result = await generateQuiz(sessionId, numQuestions, finalBloom)
             setQuestions(result.questions)
             setStep('questions')
         } catch (err: any) {
@@ -90,8 +96,8 @@ export default function GeneratorPage() {
     const downloadPDF = () => {
         let content = 'QUIZ QUESTIONS\n'
         content += '='.repeat(50) + '\n\n'
-        content += `Bloom's Level: ${bloomLevel}\n`
-        content += `Selected Topics: ${selectedTopics.length} topics\n`
+        content += `Bloom's Taxonomy: ${bloomChoice === 'specific' ? specificBloom : (bloomChoice === 'mixed' ? 'Mixed (AI)' : 'None')}\n`
+        content += `Scope: ${selectedTopics.length === allTopics.length ? 'Full Context' : `${selectedTopics.length} selected topics`}\n`
         content += '='.repeat(50) + '\n\n'
 
         questions.forEach((q, i) => {
@@ -120,63 +126,24 @@ export default function GeneratorPage() {
         URL.revokeObjectURL(url)
     }
 
-    // Helper for step progress
-    const renderProgressBar = () => {
-        const steps = [
-            { id: 'input', label: 'Input' },
-            { id: 'topics', label: 'Select Topics' },
-            { id: 'config', label: 'Configure' },
-            { id: 'questions', label: 'Questions' }
-        ]
-        const currentIdx = steps.findIndex(s => s.id === step)
-
-        return (
-            <div className="flex items-center justify-center w-full mb-10 overflow-x-auto">
-                <div className="flex items-center min-w-max gap-0">
-                    {steps.map((s, i) => {
-                        const isActive = i <= currentIdx
-                        const isLast = i === steps.length - 1
-                        return (
-                            <div key={s.id} className="flex items-center">
-                                <div className="flex flex-col items-center gap-2 relative">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${isActive
-                                            ? 'bg-indigo-600 border-indigo-600 text-white'
-                                            : 'bg-white border-gray-300 text-gray-400'
-                                        }`}>
-                                        {i + 1}
-                                    </div>
-                                    <span className={`text-xs font-semibold uppercase tracking-wider absolute -bottom-6 w-32 text-center ${isActive ? 'text-indigo-600' : 'text-gray-400'
-                                        }`}>
-                                        {s.label}
-                                    </span>
-                                </div>
-                                {!isLast && (
-                                    <div className={`w-20 md:w-32 h-0.5 mx-2 mb-2 transition-all ${i < currentIdx ? 'bg-indigo-600' : 'bg-gray-200'
-                                        }`} />
-                                )}
-                            </div>
-                        )
-                    })}
-                </div>
-            </div>
-        )
-    }
-
     return (
-        <div className="min-h-screen bg-slate-50 py-12 px-4 animate-fade-in pb-24">
-            <div className="max-w-5xl mx-auto">
+        <div className="min-h-screen bg-gradient-to-br from-white via-indigo-50/20 to-white py-12 px-4 animate-fade-in pb-24">
+            <div className="max-w-4xl mx-auto">
 
                 {/* Header */}
-                <div className="text-center mb-12">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">Quiz Generator</h1>
-                    <p className="text-lg text-gray-600">Transform your content into learning material</p>
+                <div className="text-center mb-10">
+                    <h1 className="text-4xl font-bold text-gray-900 mb-2">QuizAI Generator</h1>
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                        <span className={step === 'input' ? 'text-indigo-600 font-bold' : ''}>1. Input</span>
+                        <span>→</span>
+                        <span className={step === 'config' || step === 'topics' ? 'text-indigo-600 font-bold' : ''}>2. Configure</span>
+                        <span>→</span>
+                        <span className={step === 'questions' ? 'text-indigo-600 font-bold' : ''}>3. Results</span>
+                    </div>
                 </div>
 
-                {renderProgressBar()}
-
-                {/* Error Banner */}
                 {error && (
-                    <div className="max-w-3xl mx-auto bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl mb-8 flex items-center gap-3">
+                    <div className="max-w-2xl mx-auto bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl mb-8 flex items-center gap-3">
                         <span className="text-xl">⚠️</span>
                         <p>{error}</p>
                     </div>
@@ -184,26 +151,25 @@ export default function GeneratorPage() {
 
                 {/* --- STEP 1: INPUT --- */}
                 {step === 'input' && (
-                    <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="bg-gray-50 px-8 py-6 border-b border-gray-100">
-                            <h2 className="text-xl font-semibold text-gray-800">Upload Source Material</h2>
-                        </div>
+                    <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-md shadow-gray-100 border border-gray-100 overflow-hidden">
                         <div className="p-8">
+                            <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Upload Learning Material</h2>
+
                             <div className="flex gap-4 mb-6">
                                 <button
                                     onClick={() => setInputType('text')}
-                                    className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${inputType === 'text'
-                                            ? 'bg-indigo-50 border-2 border-indigo-500 text-indigo-700'
-                                            : 'bg-white border-2 border-gray-100 text-gray-600 hover:border-gray-200'
+                                    className={`flex-1 py-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 shadow-sm ${inputType === 'text'
+                                            ? 'bg-indigo-600 text-white shadow-indigo-200'
+                                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                                         }`}
                                 >
                                     <span className="text-xl">✍️</span> Paste Text
                                 </button>
                                 <button
                                     onClick={() => setInputType('file')}
-                                    className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${inputType === 'file'
-                                            ? 'bg-indigo-50 border-2 border-indigo-500 text-indigo-700'
-                                            : 'bg-white border-2 border-gray-100 text-gray-600 hover:border-gray-200'
+                                    className={`flex-1 py-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 shadow-sm ${inputType === 'file'
+                                            ? 'bg-indigo-600 text-white shadow-indigo-200'
+                                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                                         }`}
                                 >
                                     <span className="text-xl">📄</span> Upload File
@@ -214,51 +180,178 @@ export default function GeneratorPage() {
                                 <textarea
                                     value={text}
                                     onChange={(e) => setText(e.target.value)}
-                                    placeholder="Paste your syllabus, notes, or chapter text here..."
-                                    className="w-full h-64 p-4 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none resize-none text-gray-700 leading-relaxed font-mono text-sm"
+                                    placeholder="Paste your content here..."
+                                    className="w-full h-64 p-4 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none resize-none text-gray-700 leading-relaxed font-mono text-sm bg-gray-50/50"
                                 />
                             ) : (
-                                <div className="border-2 border-dashed border-gray-200 rounded-xl h-64 flex flex-col items-center justify-center bg-gray-50 hover:bg-white hover:border-indigo-300 transition-all cursor-pointer group relative">
+                                <div className="border-2 border-dashed border-gray-200 rounded-xl h-64 flex flex-col items-center justify-center bg-gray-50/50 hover:bg-white hover:border-indigo-400 transition-all cursor-pointer group relative">
                                     <input
                                         type="file"
                                         accept=".pdf,.png,.jpg,.jpeg"
                                         onChange={(e) => setFile(e.target.files?.[0] || null)}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     />
-                                    <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+                                    <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform text-indigo-500">
                                         {file ? '✅' : '📤'}
                                     </div>
                                     <p className="font-medium text-gray-900 text-lg">
-                                        {file ? file.name : 'Drop your file here'}
+                                        {file ? file.name : 'Click to Upload'}
                                     </p>
-                                    <p className="text-gray-500 mt-1">Supports PDF, JPG, PNG</p>
+                                    <p className="text-gray-500 mt-1">PDF, JPG, PNG supported</p>
                                 </div>
                             )}
 
                             <button
                                 onClick={handleProcessInput}
                                 disabled={loading || (!text.trim() && !file)}
-                                className="w-full mt-8 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 rounded-xl text-lg shadow-lg shadow-indigo-200 transition-all disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+                                className="w-full mt-8 bg-gray-900 hover:bg-gray-800 text-white font-semibold py-4 rounded-xl text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:shadow-none"
                             >
-                                {loading ? (
-                                    <>
-                                        <span className="animate-spin">⏳</span> Processing...
-                                    </>
-                                ) : (
-                                    <>Next: Select Topics →</>
-                                )}
+                                {loading ? 'Processing...' : 'Next Step →'}
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* --- STEP 2: TOPIC SELECTION --- */}
+                {/* --- STEP 2: CONFIGURATION --- */}
+                {step === 'config' && (
+                    <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-md shadow-gray-100 border border-gray-100 p-8">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-8">Configure Quiz</h2>
+
+                        {/* Bloom's Taxonomy Question */}
+                        <div className="mb-8">
+                            <label className="block text-lg font-semibold text-gray-900 mb-4">
+                                1. Do you want to apply Bloom's Taxonomy?
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                                <button
+                                    onClick={() => setBloomChoice('none')}
+                                    className={`p-4 rounded-xl border-2 text-center transition-all ${bloomChoice === 'none'
+                                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
+                                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                        }`}
+                                >
+                                    No <span className="text-xs font-normal block text-gray-500 mt-1">Standard questions</span>
+                                </button>
+                                <button
+                                    onClick={() => setBloomChoice('mixed')}
+                                    className={`p-4 rounded-xl border-2 text-center transition-all ${bloomChoice === 'mixed'
+                                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
+                                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                        }`}
+                                >
+                                    Mixed (AI) <span className="text-xs font-normal block text-gray-500 mt-1">Balanced mix</span>
+                                </button>
+                                <button
+                                    onClick={() => setBloomChoice('specific')}
+                                    className={`p-4 rounded-xl border-2 text-center transition-all ${bloomChoice === 'specific'
+                                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
+                                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                        }`}
+                                >
+                                    Specific Level <span className="text-xs font-normal block text-gray-500 mt-1">Choose below</span>
+                                </button>
+                            </div>
+
+                            {/* Specific Bloom Level Selector (Conditional) */}
+                            {bloomChoice === 'specific' && (
+                                <div className="bg-indigo-50/50 p-4 rounded-xl animate-fade-in border border-indigo-100">
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Select Bloom's Level:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate'].map((level) => (
+                                            <button
+                                                key={level}
+                                                onClick={() => setSpecificBloom(level)}
+                                                className={`px-4 py-2 rounded-lg text-sm transition-colors ${specificBloom === level
+                                                        ? 'bg-indigo-600 text-white font-medium shadow-md'
+                                                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                                    }`}
+                                            >
+                                                {level}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <hr className="border-gray-100 my-8" />
+
+                        {/* Topic Scope Question */}
+                        <div className="mb-8">
+                            <label className="block text-lg font-semibold text-gray-900 mb-2">
+                                2. Topic Scope
+                            </label>
+                            <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 flex items-center justify-between">
+                                <div>
+                                    <p className="font-medium text-gray-900">
+                                        {selectedTopics.length === allTopics.length
+                                            ? `All ${allTopics.length} topics included`
+                                            : `${selectedTopics.length} of ${allTopics.length} topics selected`}
+                                    </p>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        {selectedTopics.length === allTopics.length ? 'Covering entire content context' : 'Focused on specific areas'}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setStep('topics')}
+                                    className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 shadow-sm transition-all"
+                                >
+                                    Select Manual Topics →
+                                </button>
+                            </div>
+                        </div>
+
+                        <hr className="border-gray-100 my-8" />
+
+                        {/* Question Count */}
+                        <div className="mb-8">
+                            <label className="block text-lg font-semibold text-gray-900 mb-4">
+                                3. Number of Questions: <span className="text-indigo-600 font-bold">{numQuestions}</span>
+                            </label>
+                            <input
+                                type="range"
+                                min="5"
+                                max="30"
+                                step="5"
+                                value={numQuestions}
+                                onChange={(e) => setNumQuestions(parseInt(e.target.value))}
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                            />
+                            <div className="flex justify-between text-xs text-gray-400 mt-2 px-1">
+                                <span>5</span>
+                                <span>10</span>
+                                <span>15</span>
+                                <span>20</span>
+                                <span>25</span>
+                                <span>30</span>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 mt-8">
+                            <button
+                                onClick={() => setStep('input')}
+                                className="px-6 py-4 rounded-xl border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 transition-colors"
+                            >
+                                ← Back
+                            </button>
+                            <button
+                                onClick={handleGenerateQuestions}
+                                disabled={loading}
+                                className="flex-1 bg-gray-900 hover:bg-gray-800 text-white font-bold py-4 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 transform active:scale-[0.99]"
+                            >
+                                {loading ? 'Generating...' : '✨ Generate Questions'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- STEP 3: TOPIC SELECTION (Manual Page) --- */}
                 {step === 'topics' && (
                     <div className="max-w-4xl mx-auto">
                         <div className="flex items-center justify-between mb-6">
                             <div>
-                                <h2 className="text-2xl font-bold text-gray-900">Select Topics</h2>
-                                <p className="text-gray-500">Choose the concepts you want to be tested on.</p>
+                                <h2 className="text-2xl font-bold text-gray-900">Select Manual Topics</h2>
+                                <p className="text-gray-500">Choose exactly what you want to focus on.</p>
                             </div>
                             <div className="flex gap-3">
                                 <button
@@ -277,137 +370,49 @@ export default function GeneratorPage() {
                                     <div
                                         key={i}
                                         onClick={() => toggleTopic(topic)}
-                                        className={`flex items-start p-4 rounded-xl border-2 cursor-pointer transition-all group ${isSelected
-                                                ? 'bg-white border-indigo-500 shadow-md shadow-indigo-100'
-                                                : 'bg-white border-transparent shadow-sm hover:border-gray-200'
+                                        className={`flex items-start p-4 rounded-xl border cursor-pointer transition-all ${isSelected
+                                                ? 'bg-indigo-50 border-indigo-500 shadow-sm'
+                                                : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
                                             }`}
                                     >
-                                        <div className={`w-6 h-6 rounded-md border flex items-center justify-center mr-4 flex-shrink-0 transition-colors ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-gray-300 bg-gray-50'
+                                        <div className={`w-6 h-6 rounded border flex items-center justify-center mr-4 flex-shrink-0 transition-colors ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-gray-300'
                                             }`}>
-                                            {isSelected && <span className="text-white text-xs">✓</span>}
+                                            {isSelected && <span className="text-xs">✓</span>}
                                         </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-0.5">
-                                                <span className="text-xs font-bold text-gray-400 font-mono">#{String(i + 1).padStart(2, '0')}</span>
-                                                <h3 className={`font-medium transition-colors ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>{topic}</h3>
-                                            </div>
-                                        </div>
+                                        <span className={`font-medium ${isSelected ? 'text-gray-900' : 'text-gray-600'}`}>{topic}</span>
                                     </div>
                                 )
                             })}
                         </div>
 
-                        <div className="flex gap-4">
-                            <button
-                                onClick={() => setStep('input')}
-                                className="px-6 py-3 rounded-xl border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 transition-colors"
-                            >
-                                ← Back
-                            </button>
-                            <button
-                                onClick={() => setStep('config')}
-                                disabled={selectedTopics.length === 0}
-                                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-indigo-200 transition-all disabled:opacity-50 disabled:shadow-none"
-                            >
-                                Next: Configure Quiz →
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* --- STEP 3: CONFIGURATION --- */}
-                {step === 'config' && (
-                    <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-8">Customize Your Quiz</h2>
-
-                        {/* Bloom's Taxonomy Section */}
-                        <div className="mb-10">
-                            <label className="block text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">
-                                Bloom's Taxonomy Level
-                            </label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                {[
-                                    { id: 'Mixed', label: 'Mixed Levels', desc: 'Balanced mix of all types', icon: '🎨' },
-                                    { id: 'Remember', label: 'Remember', desc: 'Recall facts & definitions', icon: '🧠' },
-                                    { id: 'Understand', label: 'Understand', desc: 'Explain ideas & concepts', icon: '💡' },
-                                    { id: 'Apply', label: 'Apply', desc: 'Use info in new situations', icon: '🛠️' },
-                                    { id: 'Analyze', label: 'Analyze', desc: 'Draw connections', icon: '🔍' },
-                                    { id: 'Evaluate', label: 'Evaluate', desc: 'Justify a stand or decision', icon: '⚖️' },
-                                ].map((level) => (
-                                    <button
-                                        key={level.id}
-                                        onClick={() => setBloomLevel(level.id)}
-                                        className={`p-4 rounded-xl border-2 text-left transition-all ${bloomLevel === level.id
-                                                ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500'
-                                                : 'border-gray-100 bg-white hover:border-gray-300'
-                                            }`}
-                                    >
-                                        <div className="text-2xl mb-2">{level.icon}</div>
-                                        <div className="font-bold text-gray-900 text-sm mb-1">{level.label}</div>
-                                        <div className="text-xs text-gray-500 leading-tight">{level.desc}</div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Question Count */}
-                        <div className="mb-10">
-                            <div className="flex items-center justify-between mb-4">
-                                <label className="text-sm font-bold text-gray-900 uppercase tracking-wide">
-                                    Number of Questions
-                                </label>
-                                <div className="bg-indigo-100 text-indigo-700 font-bold px-3 py-1 rounded-lg">
-                                    {numQuestions}
-                                </div>
-                            </div>
-                            <input
-                                type="range"
-                                min="5"
-                                max="30"
-                                step="1"
-                                value={numQuestions}
-                                onChange={(e) => setNumQuestions(parseInt(e.target.value))}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                            />
-                            <div className="flex justify-between text-xs text-gray-400 mt-2">
-                                <span>5 Questions</span>
-                                <span>30 Questions</span>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-4">
-                            <button
-                                onClick={() => setStep('topics')}
-                                className="px-6 py-4 rounded-xl border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 transition-colors"
-                            >
-                                ← Back
-                            </button>
-                            <button
-                                onClick={handleGenerateQuestions}
-                                disabled={loading}
-                                className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 transform active:scale-95"
-                            >
-                                {loading ? '🔮 Generating Magic...' : '✨ Generate Questions'}
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => setStep('config')}
+                            className="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-4 rounded-xl shadow-lg transition-all"
+                        >
+                            Save Selection & Return →
+                        </button>
                     </div>
                 )}
 
                 {/* --- STEP 4: RESULTS --- */}
                 {step === 'questions' && (
-                    <div className="max-w-4xl mx-auto">
+                    <div className="max-w-4xl mx-auto animate-fade-in">
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
                             <div>
-                                <h2 className="text-2xl font-bold text-gray-900">Your Questions Ready!</h2>
+                                <h2 className="text-2xl font-bold text-gray-900">Quiz Ready!</h2>
                                 <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
-                                    <span className="flex items-center gap-1">📊 {questions.length} Questions</span>
-                                    <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                    <span className="flex items-center gap-1">🏷️ {bloomLevel} Level</span>
+                                    <span className="bg-gray-100 px-2 py-1 rounded text-gray-700 font-medium">
+                                        {questions.length} Questions
+                                    </span>
+                                    <span>•</span>
+                                    <span>
+                                        {bloomChoice === 'specific' ? specificBloom : (bloomChoice === 'mixed' ? 'Mixed Types' : 'Standard')}
+                                    </span>
                                 </div>
                             </div>
                             <button
                                 onClick={downloadPDF}
-                                className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 shadow-lg shadow-gray-200 transition-all"
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 shadow-lg shadow-indigo-200 transition-all"
                             >
                                 <span>📥</span> Download PDF
                             </button>
@@ -415,25 +420,28 @@ export default function GeneratorPage() {
 
                         <div className="space-y-4">
                             {questions.map((q, i) => (
-                                <div key={i} className="bg-white rounded-xl p-6 border border-gray-100 hover:shadow-md transition-shadow">
-                                    <div className="flex gap-4">
-                                        <div className="w-8 h-8 bg-indigo-100 text-indigo-700 font-bold rounded-lg flex items-center justify-center flex-shrink-0 text-sm">
-                                            {i + 1}
-                                        </div>
+                                <div key={i} className="bg-white rounded-xl p-8 border border-gray-100 shadow-sm">
+                                    <div className="flex items-start gap-4">
+                                        <span className="font-mono text-gray-300 font-bold text-lg select-none">{String(i + 1).padStart(2, '0')}</span>
                                         <div className="flex-1">
-                                            <h3 className="text-lg font-medium text-gray-900 mb-4">{q.question}</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-6">{q.question}</h3>
+                                            <div className="grid grid-cols-1 gap-3">
                                                 {q.options.map((opt, j) => (
                                                     <div
                                                         key={j}
-                                                        className={`p-3 rounded-lg text-sm border ${j === q.correct_answer
-                                                                ? 'bg-emerald-50 border-emerald-200 text-emerald-800 font-medium'
-                                                                : 'bg-white border-gray-200 text-gray-600'
+                                                        className={`p-4 rounded-lg flex items-start gap-3 ${j === q.correct_answer
+                                                                ? 'bg-emerald-50 border border-emerald-100'
+                                                                : 'bg-gray-50 border border-transparent'
                                                             }`}
                                                     >
-                                                        <span className="mr-2 opacity-60">{String.fromCharCode(65 + j)}.</span>
-                                                        {opt}
-                                                        {j === q.correct_answer && <span className="float-right">✅</span>}
+                                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${j === q.correct_answer ? 'bg-emerald-200 text-emerald-800' : 'bg-gray-200 text-gray-500'
+                                                            }`}>
+                                                            {String.fromCharCode(65 + j)}
+                                                        </div>
+                                                        <span className={j === q.correct_answer ? 'text-emerald-900 font-medium' : 'text-gray-600'}>
+                                                            {opt}
+                                                        </span>
+                                                        {j === q.correct_answer && <span className="ml-auto text-emerald-600 font-bold">✓</span>}
                                                     </div>
                                                 ))}
                                             </div>
@@ -448,7 +456,7 @@ export default function GeneratorPage() {
                                 onClick={() => setStep('config')}
                                 className="px-6 py-3 rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium"
                             >
-                                Regenerate
+                                Adjust Settings
                             </button>
                             <button
                                 onClick={() => {
@@ -457,9 +465,9 @@ export default function GeneratorPage() {
                                     setAllTopics([])
                                     setQuestions([])
                                 }}
-                                className="px-6 py-3 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 font-medium shadow-md shadow-indigo-200"
+                                className="px-6 py-3 rounded-xl bg-gray-900 text-white hover:bg-gray-800 font-medium shadow-lg"
                             >
-                                Start New Quiz
+                                Start New
                             </button>
                         </div>
                     </div>
