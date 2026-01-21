@@ -1,0 +1,26 @@
+::ffff:127.0.0.1 - - [19/Jan/2026 14:21:43] "GET / HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [19/Jan/2026 14:21:43] "GET /css/style.css HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [19/Jan/2026 14:21:43] "GET /js/main.js HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [19/Jan/2026 14:21:43] code 404, message File not found
+::ffff:127.0.0.1 - - [19/Jan/2026 14:21:43] "GET /favicon.ico HTTP/1.1" 404 -
+::ffff:127.0.0.1 - - [19/Jan/2026 14:21:43] code 404, message File not found
+::ffff:127.0.0.1 - - [19/Jan/2026 14:21:43] "GET /favicon.ico HTTP/1.1" 404 -
+::ffff:127.0.0.1 - - [19/Jan/2026 14:23:34] "GET / HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [19/Jan/2026 14:23:34] "GET /css/style.css HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [19/Jan/2026 14:23:34] "GET /js/main.js HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [19/Jan/2026 14:23:34] code 404, message File not found
+::ffff:127.0.0.1 - - [19/Jan/2026 14:23:34] "GET /favicon.ico HTTP/1.1" 404 -
+::ffff:127.0.0.1 - - [19/Jan/2026 14:28:21] "GET /js/main.js HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [19/Jan/2026 14:30:21] "GET / HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [19/Jan/2026 14:30:21] "GET /css/style.css HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [19/Jan/2026 14:30:21] "GET /js/main.js HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [19/Jan/2026 15:15:49] "GET / HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [19/Jan/2026 15:15:49] "GET /css/style.css HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [19/Jan/2026 15:15:49] "GET /js/main.js HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [19/Jan/2026 15:46:57] "GET / HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [19/Jan/2026 15:46:57] "GET /css/style.css HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [19/Jan/2026 15:46:57] "GET /js/main.js HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [19/Jan/2026 15:50:18] "GET / HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [19/Jan/2026 15:56:36] "GET / HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [19/Jan/2026 16:00:10] "GET /css/style.css HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [19/Jan/2026 16:00:10] "GET /js/main.js HTTP/1.1" 304 -
