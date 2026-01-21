@@ -216,7 +216,7 @@ For MCQ:
 [
   {{
     "question": "Question text?",
-    "options": ["A", "B", "C", "D"],
+    "options": ["Option text 1", "Option text 2", "Option text 3", "Option text 4"],
     "correct_answer": 0,
     "question_type": "mcq"
   }}
@@ -381,24 +381,10 @@ Example: ["Backpropagation", "Gradient Descent", "Learning Rate", "Overfitting"]
         if expected_type == "fill_ups" and "____" not in question:
             return False
         
-        # Filter out nonsensical MCQ options
+        # Basic MCQ validation
         if expected_type == "mcq":
-            bad_phrases = [
-                "tastes good", "causes global warming", "holiday destination",
-                "musical instrument", "type of food", "color", "edible",
-                "fictional character", "biological organism", "none of the above",
-                "all of the above", "not important", "unrelated"
-            ]
-            
             for opt in q["options"]:
-                if not isinstance(opt, str): return False
-                opt_lower = opt.lower()
-                for bad in bad_phrases:
-                    if bad in opt_lower:
-                        return False
-            
-            for opt in q["options"]:
-                if len(opt.strip()) < 1 or len(opt) > 500:
+                if not isinstance(opt, str) or len(opt.strip()) < 1 or len(opt) > 1000:
                     return False
         
         return True
@@ -567,7 +553,7 @@ Example: ["Backpropagation", "Gradient Descent", "Learning Rate", "Overfitting"]
         [
           {
             "question": "Question text?",
-            "options": ["A", "B", "C", "D"],
+            "options": ["Option text 1", "Option text 2", "Option text 3", "Option text 4"],
             "correct_answer": 0
           }
         ]
@@ -579,7 +565,7 @@ Example: ["Backpropagation", "Gradient Descent", "Learning Rate", "Overfitting"]
                 try:
                     model = genai.GenerativeModel(model_name)
                     response = model.generate_content(prompt)
-                    result = self._parse_gemini_response(response.text, ["parsed_content"], "mixed", "Mixed")
+                    result = self._parse_gemini_response(response.text, ["parsed_content"], "mixed", "Mixed", "mcq")
                     if result and result.get("questions"):
                         return result
                 except Exception as e:

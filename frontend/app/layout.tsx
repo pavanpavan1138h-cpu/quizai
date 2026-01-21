@@ -24,8 +24,8 @@ export default function RootLayout({
           <main className="min-h-[calc(100vh-64px)]">
             {children}
           </main>
-          <footer className="bg-slate-900/50 backdrop-blur-md border-t border-white/5 py-8">
-            <div className="max-w-6xl mx-auto px-4 text-center text-blue-400/60 text-sm">
+          <footer className="bg-slate-900/50 dark:bg-slate-900/50 light:bg-slate-100/50 backdrop-blur-md border-t border-white/5 py-8">
+            <div className="max-w-6xl mx-auto px-4 text-center text-blue-400/60 dark:text-blue-400/60 light:text-blue-600/60 text-sm">
               <p>© 2026 SocratAI. Built with ❤️ using Next.js</p>
             </div>
           </footer>

@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { uploadFile, processText, parseQuiz, parseQuizFile, generateQuiz, submitQuiz } from '@/lib/api'
 import Link from 'next/link'
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 
 interface Question {
     question: string
@@ -254,7 +255,7 @@ export default function QuizPage() {
                                 <div className="border-2 border-dashed border-primary/20 rounded-2xl p-16 text-center bg-white/5 hover:bg-white/10 hover:border-primary transition-all cursor-pointer relative group">
                                     <input
                                         type="file"
-                                        accept=".pdf,.png,.jpg"
+                                        accept=".pdf,.png,.jpg,.txt"
                                         onChange={(e) => setFile(e.target.files?.[0] || null)}
                                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                         id="quiz-file"
@@ -266,7 +267,7 @@ export default function QuizPage() {
                                         {file ? file.name : 'Click to upload material'}
                                     </p>
                                     <p className="text-slate-500 dark:text-blue-300/60 text-sm mt-3 font-medium">
-                                        PDF, PNG, JPG supported
+                                        PDF, PNG, JPG, TXT supported
                                     </p>
                                 </div>
                             )}
@@ -274,7 +275,7 @@ export default function QuizPage() {
 
                         <button
                             onClick={handleUpload}
-                            disabled={loading || (quizMode === 'generate' && !text.trim() && !file) || (quizMode === 'parse' && !text.trim())}
+                            disabled={loading || (quizMode === 'generate' && !text.trim() && !file) || (quizMode === 'parse' && !text.trim() && !file)}
                             className="btn-primary w-full py-5 text-xl"
                         >
                             {loading ? (
@@ -541,18 +542,74 @@ export default function QuizPage() {
                 )}
 
                 {/* Step 4: Results */}
+                {/* Step 4: Results */}
                 {step === 'results' && (
-                    <div className="space-y-6">
-                        <div className="card p-8 text-center bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-2xl">
-                            <div className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 mb-2">{score.toFixed(0)}%</div>
-                            <p className="text-xl text-blue-200">
-                                You got {results.filter(r => r.is_correct).length} out of {results.length} correct
-                            </p>
+                    <div className="space-y-8 animate-fade-in">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* Score Card */}
+                            <div className="md:col-span-1 card p-8 flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors -z-10" />
+                                <div className="text-sm font-black text-primary uppercase tracking-widest mb-2">Final Score</div>
+                                <div className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-primary to-accent">
+                                    {score.toFixed(0)}%
+                                </div>
+                                <div className="mt-4 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold ring-1 ring-primary/20">
+                                    {score >= 80 ? 'Mastery Level' : score >= 50 ? 'Intermediate' : 'Keep Practicing'}
+                                </div>
+                            </div>
+
+                            {/* Breakdown Chart */}
+                            <div className="md:col-span-2 card p-6 min-h-[300px]">
+                                <h3 className="text-lg font-black text-foreground mb-4 flex items-center gap-2">
+                                    <span className="w-1.5 h-6 bg-primary rounded-full" />
+                                    Performance Analytics
+                                </h3>
+                                <div className="h-[200px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Pie
+                                                data={[
+                                                    { name: 'Correct', value: results.filter(r => r.is_correct).length },
+                                                    { name: 'Incorrect', value: results.filter(r => !r.is_correct).length }
+                                                ]}
+                                                cx="50%"
+                                                cy="50%"
+                                                innerRadius={60}
+                                                outerRadius={80}
+                                                paddingAngle={5}
+                                                dataKey="value"
+                                            >
+                                                <Cell fill="#3b82f6" />
+                                                <Cell fill="#ef4444" />
+                                            </Pie>
+                                            <Tooltip
+                                                contentStyle={{
+                                                    background: 'var(--card-bg)',
+                                                    borderColor: 'var(--border-color)',
+                                                    borderRadius: '12px',
+                                                    color: 'var(--foreground)'
+                                                }}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                </div>
+                                <div className="flex justify-center gap-8 mt-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-3 h-3 rounded-full bg-primary" />
+                                        <span className="text-sm font-bold text-slate-500 dark:text-blue-200/60">Correct</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-3 h-3 rounded-full bg-red-500" />
+                                        <span className="text-sm font-bold text-slate-500 dark:text-blue-200/60">Incorrect</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="card p-6 bg-slate-900/50 backdrop-blur-xl border border-white/10 rounded-2xl">
-                            <h3 className="font-semibold text-white mb-4">Question Summary</h3>
-                            <div className="space-y-2">
+                        {/* Detailed Summary */}
+                        <div className="card p-8 bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl">
+                            <h3 className="text-xl font-black text-foreground mb-8">Question Review</h3>
+                            <div className="space-y-4">
                                 {results.map((r, i) => {
                                     const q = questions[i]
                                     const correctAnswerText = q.question_type === 'mcq' && q.options
@@ -562,22 +619,27 @@ export default function QuizPage() {
                                     return (
                                         <div
                                             key={i}
-                                            className={`p-4 rounded-xl space-y-2 border ${r.is_correct
-                                                ? 'bg-emerald-500/10 border-emerald-500/20'
-                                                : 'bg-red-500/10 border-red-500/20'
+                                            className={`p-6 rounded-2xl space-y-3 border transition-all hover:scale-[1.01] ${r.is_correct
+                                                ? 'bg-emerald-500/5 border-emerald-500/10'
+                                                : 'bg-red-500/5 border-red-500/10'
                                                 }`}
                                         >
-                                            <div className="flex items-center justify-between">
-                                                <span className="font-bold">Question {i + 1}</span>
-                                                <span className={`font-bold px-3 py-1 rounded-full text-xs ${r.is_correct ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
-                                                    {r.is_correct ? '✓ Correct' : '✗ Incorrect'}
+                                            <div className="flex items-center justify-between gap-4">
+                                                <div className="flex items-center gap-3">
+                                                    <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs ${r.is_correct ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
+                                                        {i + 1}
+                                                    </span>
+                                                    <span className="font-bold text-foreground">Question {i + 1}</span>
+                                                </div>
+                                                <span className={`font-black uppercase tracking-tighter px-4 py-1.5 rounded-xl text-[10px] ${r.is_correct ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
+                                                    {r.is_correct ? 'Mastered' : 'Needs Review'}
                                                 </span>
                                             </div>
-                                            <p className="text-sm opacity-80">{q.question}</p>
+                                            <p className="text-slate-600 dark:text-blue-100/70 font-medium leading-relaxed">{q.question}</p>
                                             {!r.is_correct && (
-                                                <div className="text-sm pt-2 border-t border-white/10">
-                                                    <span className="font-bold text-emerald-400">Correct Answer: </span>
-                                                    <span className="text-white">{correctAnswerText}</span>
+                                                <div className="pt-4 border-t border-red-500/10 mt-2">
+                                                    <div className="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Correct Solution</div>
+                                                    <div className="text-emerald-500 font-bold">{correctAnswerText}</div>
                                                 </div>
                                             )}
                                         </div>
@@ -586,12 +648,18 @@ export default function QuizPage() {
                             </div>
                         </div>
 
-                        <div className="flex gap-3">
-                            <button onClick={resetQuiz} className="btn-secondary flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10">
-                                Take Another Quiz
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <button
+                                onClick={resetQuiz}
+                                className="btn-secondary py-5 text-lg flex-1 border-primary/20 hover:bg-primary/5"
+                            >
+                                New Quiz
                             </button>
-                            <button onClick={() => setStep('configure')} className="btn-primary flex-1 bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-500/20">
-                                Retry Same Topics
+                            <button
+                                onClick={() => setStep('configure')}
+                                className="btn-primary py-5 text-lg flex-1 bg-gradient-to-r from-primary to-accent group"
+                            >
+                                <span className="group-hover:translate-x-1 transition-transform inline-block">Study Again →</span>
                             </button>
                         </div>
                     </div>

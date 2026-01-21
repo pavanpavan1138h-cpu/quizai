@@ -21,6 +21,10 @@ class OCRService:
         print("OCR service ready (will initialize on first use)")
         self.reader: Optional[easyocr.Reader] = None
         self._initialized = False
+        self.api_key = os.getenv("GEMINI_API_KEY")
+        if self.api_key:
+            import google.generativeai as genai
+            genai.configure(api_key=self.api_key)
     
     def _initialize_reader(self):
         """Initialize EasyOCR reader lazily"""
@@ -30,42 +34,93 @@ class OCRService:
         try:
             print("Initializing OCR service...")
             # Fix SSL certificate issues on macOS
-            # EasyOCR downloads models which can fail due to SSL certificate issues
             import ssl
-            
-            # Temporarily disable SSL verification for EasyOCR model downloads
-            # This is safe since we're downloading from known sources
             original_context = ssl._create_default_https_context
             ssl._create_default_https_context = ssl._create_unverified_context
             
             try:
                 self.reader = easyocr.Reader(['en'], gpu=False)
             finally:
-                # Restore original SSL context
                 ssl._create_default_https_context = original_context
             
             self._initialized = True
             print("OCR service initialized successfully")
         except Exception as e:
             print(f"Warning: Could not initialize OCR service: {e}")
-            print("OCR will use fallback text extraction")
-            # Restore SSL context even on error
-            try:
-                import ssl
-                ssl._create_default_https_context = ssl._create_unverified_context
-            except:
-                pass
             self.reader = None
-            self._initialized = True  # Mark as attempted to avoid retrying
+            self._initialized = True
     
     def extract_text(self, file_path: str) -> str:
-        """Extract text from image or PDF"""
+        """Extract text from image, PDF, or TXT file"""
         ext = os.path.splitext(file_path)[1].lower()
+        
+        # Try Gemini first if API key is available (it's much better than EasyOCR/PyPDF2)
+        if self.api_key:
+            try:
+                text = self.extract_text_with_gemini(file_path)
+                if text and len(text.strip()) > 10:
+                    return text
+            except Exception as e:
+                print(f"Gemini OCR extraction failed: {e}")
         
         if ext == '.pdf':
             return self.extract_text_from_pdf(file_path)
+        elif ext == '.txt':
+            return self.extract_text_from_txt(file_path)
         else:
             return self.extract_text_from_image(file_path)
+    
+    def extract_text_with_gemini(self, file_path: str) -> str:
+        """Use Gemini to extract text from a file (Image or PDF)"""
+        import google.generativeai as genai
+        print(f"Using Gemini to extract text from {file_path}...")
+        
+        # Support for images and PDFs
+        ext = os.path.splitext(file_path)[1].lower()
+        mime_type = "application/pdf" if ext == '.pdf' else f"image/{ext[1:]}"
+        if ext == '.jpg': mime_type = "image/jpeg"
+        
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        
+        try:
+            with open(file_path, "rb") as f:
+                content = f.read()
+            
+            response = model.generate_content([
+                {
+                    "mime_type": mime_type,
+                    "data": content
+                },
+                "Extract all text from this document as accurately as possible. Preserve the structure if it looks like a quiz or syllabus."
+            ])
+            
+            text = response.text
+            print(f"Gemini extracted {len(text)} characters")
+            return text
+        except Exception as e:
+            print(f"Gemini Vision error: {e}")
+            return ""
+
+    def extract_text_from_txt(self, file_path: str) -> str:
+        """Extract text from TXT file"""
+        try:
+            print(f"Processing TXT file: {file_path}")
+            with open(file_path, 'r', encoding='utf-8') as f:
+                text = f.read()
+            print(f"Extracted {len(text)} characters from TXT file")
+            return text
+        except UnicodeDecodeError:
+            try:
+                with open(file_path, 'r', encoding='latin-1') as f:
+                    text = f.read()
+                print(f"Extracted {len(text)} characters from TXT file (latin-1)")
+                return text
+            except Exception as e:
+                print(f"TXT Extraction Error: {e}")
+                return ""
+        except Exception as e:
+            print(f"TXT Extraction Error: {e}")
+            return ""
 
     def extract_text_from_pdf(self, file_path: str) -> str:
         """Extract text from PDF using PyPDF2"""
@@ -91,17 +146,11 @@ class OCRService:
         self._initialize_reader()
         
         if self.reader is None:
-            # Fallback: return empty string or try basic extraction
             print("OCR not available, using fallback")
             return ""
         
         try:
             print(f"Processing image: {image_path}")
-            # Use paragraph=True to combine close text into paragraphs
-            # detail=0 returns just the text list
-            # mag_ratio=1.5 helps with small text
-            # contrast_ths=0.1 helps with low contrast
-            # adjust_contrast=0.5 helps with legibility
             results = self.reader.readtext(
                 image_path, 
                 detail=0, 
@@ -110,21 +159,11 @@ class OCRService:
                 contrast_ths=0.1,
                 adjust_contrast=0.5
             )
-            
-            # Combine all detected text with newlines to preserve structure
             text = "\n\n".join(results)
-            
             print(f"Extracted {len(text)} characters")
-            if len(text) > 0:
-                print(f"Sample text: {text[:200]}...")
-            else:
-                print("No text detected!")
-                
             return text
         except Exception as e:
             print(f"OCR Error: {e}")
-            import traceback
-            traceback.print_exc()
             return ""
     
     def extract_topics(self, text: str) -> List[str]:
