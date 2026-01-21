@@ -132,7 +132,7 @@ export default function GeneratorPage() {
 
                 {/* Header */}
                 <div className="text-center mb-10">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">QuizAI Generator</h1>
+                    <h1 className="text-4xl font-bold text-gray-900 mb-2">SocratAI Generator</h1>
                     <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                         <span className={step === 'input' ? 'text-indigo-600 font-bold' : ''}>1. Input</span>
                         <span>→</span>
@@ -159,8 +159,8 @@ export default function GeneratorPage() {
                                 <button
                                     onClick={() => setInputType('text')}
                                     className={`flex-1 py-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 shadow-sm ${inputType === 'text'
-                                            ? 'bg-indigo-600 text-white shadow-indigo-200'
-                                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                        ? 'bg-indigo-600 text-white shadow-indigo-200'
+                                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                                         }`}
                                 >
                                     <span className="text-xl">✍️</span> Paste Text
@@ -168,8 +168,8 @@ export default function GeneratorPage() {
                                 <button
                                     onClick={() => setInputType('file')}
                                     className={`flex-1 py-4 rounded-xl font-medium transition-all flex items-center justify-center gap-2 shadow-sm ${inputType === 'file'
-                                            ? 'bg-indigo-600 text-white shadow-indigo-200'
-                                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                        ? 'bg-indigo-600 text-white shadow-indigo-200'
+                                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                                         }`}
                                 >
                                     <span className="text-xl">📄</span> Upload File
@@ -226,8 +226,8 @@ export default function GeneratorPage() {
                                 <button
                                     onClick={() => setBloomChoice('none')}
                                     className={`p-4 rounded-xl border-2 text-center transition-all ${bloomChoice === 'none'
-                                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
-                                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
+                                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                                         }`}
                                 >
                                     No <span className="text-xs font-normal block text-gray-500 mt-1">Standard questions</span>
@@ -235,8 +235,8 @@ export default function GeneratorPage() {
                                 <button
                                     onClick={() => setBloomChoice('mixed')}
                                     className={`p-4 rounded-xl border-2 text-center transition-all ${bloomChoice === 'mixed'
-                                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
-                                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
+                                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                                         }`}
                                 >
                                     Mixed (AI) <span className="text-xs font-normal block text-gray-500 mt-1">Balanced mix</span>
@@ -244,8 +244,8 @@ export default function GeneratorPage() {
                                 <button
                                     onClick={() => setBloomChoice('specific')}
                                     className={`p-4 rounded-xl border-2 text-center transition-all ${bloomChoice === 'specific'
-                                            ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
-                                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold'
+                                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                                         }`}
                                 >
                                     Specific Level <span className="text-xs font-normal block text-gray-500 mt-1">Choose below</span>
@@ -262,8 +262,8 @@ export default function GeneratorPage() {
                                                 key={level}
                                                 onClick={() => setSpecificBloom(level)}
                                                 className={`px-4 py-2 rounded-lg text-sm transition-colors ${specificBloom === level
-                                                        ? 'bg-indigo-600 text-white font-medium shadow-md'
-                                                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                                    ? 'bg-indigo-600 text-white font-medium shadow-md'
+                                                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
                                                     }`}
                                             >
                                                 {level}
@@ -371,8 +371,8 @@ export default function GeneratorPage() {
                                         key={i}
                                         onClick={() => toggleTopic(topic)}
                                         className={`flex items-start p-4 rounded-xl border cursor-pointer transition-all ${isSelected
-                                                ? 'bg-indigo-50 border-indigo-500 shadow-sm'
-                                                : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                                            ? 'bg-indigo-50 border-indigo-500 shadow-sm'
+                                            : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
                                             }`}
                                     >
                                         <div className={`w-6 h-6 rounded border flex items-center justify-center mr-4 flex-shrink-0 transition-colors ${isSelected ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-gray-300'
@@ -430,8 +430,8 @@ export default function GeneratorPage() {
                                                     <div
                                                         key={j}
                                                         className={`p-4 rounded-lg flex items-start gap-3 ${j === q.correct_answer
-                                                                ? 'bg-emerald-50 border border-emerald-100'
-                                                                : 'bg-gray-50 border border-transparent'
+                                                            ? 'bg-emerald-50 border border-emerald-100'
+                                                            : 'bg-gray-50 border border-transparent'
                                                             }`}
                                                     >
                                                         <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${j === q.correct_answer ? 'bg-emerald-200 text-emerald-800' : 'bg-gray-200 text-gray-500'

@@ -13,8 +13,8 @@
 
 body {
   color: var(--text-primary);
-  /* "Light mixed white theme" requested by user */
-  background: linear-gradient(to bottom right, #ffffff, #f8fafc, #eff6ff);
+  /* "Bluish white theme" requested by user */
+  background: linear-gradient(135deg, #f0f9ff 0%, #eef2ff 100%);
   min-height: 100vh;
 }
 

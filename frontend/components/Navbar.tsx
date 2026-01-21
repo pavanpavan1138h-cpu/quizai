@@ -29,7 +29,7 @@ export default function Navbar() {
                         <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
                             <span className="text-white font-bold text-sm">Q</span>
                         </div>
-                        <span className="font-bold text-xl text-gray-800">QuizAI</span>
+                        <span className="font-bold text-xl text-gray-800">SocratAI</span>
                     </Link>
 
                     {/* Desktop Links */}
@@ -39,8 +39,8 @@ export default function Navbar() {
                                 key={link.href}
                                 href={link.href}
                                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${isActive(link.href)
-                                        ? 'bg-indigo-50 text-indigo-600'
-                                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                    ? 'bg-indigo-50 text-indigo-600'
+                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                     }`}
                             >
                                 {link.label}
@@ -88,8 +88,8 @@ export default function Navbar() {
                                 href={link.href}
                                 onClick={() => setMobileOpen(false)}
                                 className={`block px-4 py-2 rounded-lg text-sm font-medium ${isActive(link.href)
-                                        ? 'bg-indigo-50 text-indigo-600'
-                                        : 'text-gray-600 hover:bg-gray-50'
+                                    ? 'bg-indigo-50 text-indigo-600'
+                                    : 'text-gray-600 hover:bg-gray-50'
                                     }`}
                             >
                                 {link.label}

@@ -61,7 +61,7 @@ export default function Home() {
       <section className="py-16 px-4 bg-white/50">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            Why Choose QuizAI?
+            Why Choose SocratAI?
           </h2>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">

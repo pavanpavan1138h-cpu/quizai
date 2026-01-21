@@ -8,7 +8,7 @@ export default function AboutPage() {
             <div className="max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-12">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-4">About QuizAI</h1>
+                    <h1 className="text-4xl font-bold text-gray-900 mb-4">About SocratAI</h1>
                     <p className="text-xl text-gray-600">
                         An AI-powered adaptive quiz generation platform
                     </p>
@@ -16,11 +16,11 @@ export default function AboutPage() {
 
                 {/* Main Content */}
                 <div className="space-y-8">
-                    {/* What is QuizAI */}
+                    {/* What is SocratAI */}
                     <div className="card p-8">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">What is QuizAI?</h2>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">What is SocratAI?</h2>
                         <p className="text-gray-600 leading-relaxed">
-                            QuizAI is an intelligent quiz generation platform that transforms any learning material
+                            SocratAI is an intelligent quiz generation platform that transforms any learning material
                             into high-quality, adaptive quizzes. Using Google's Gemini AI, we analyze your syllabus,
                             textbooks, or notes to create meaningful questions that test true understanding.
                         </p>

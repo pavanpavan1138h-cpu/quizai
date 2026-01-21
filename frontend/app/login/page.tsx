@@ -29,7 +29,7 @@ export default function LoginPage() {
                         {isLogin ? 'Welcome back' : 'Create an account'}
                     </h1>
                     <p className="text-gray-600 mt-2">
-                        {isLogin ? 'Sign in to continue to QuizAI' : 'Get started with QuizAI for free'}
+                        {isLogin ? 'Sign in to continue to SocratAI' : 'Get started with SocratAI for free'}
                     </p>
                 </div>
 
