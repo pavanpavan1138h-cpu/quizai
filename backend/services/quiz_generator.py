@@ -84,13 +84,13 @@ class QuizGenerator:
                 return False
         return True
 
-    def generate_quiz(self, topics: List[str], context: str = "", num_questions: int = 10, difficulty: str = "medium", bloom_level: str = "Mixed") -> Dict:
+    def generate_quiz(self, topics: List[str], context: str = "", num_questions: int = 10, difficulty: str = "medium", bloom_level: str = "Mixed", question_type: str = "mcq") -> Dict:
         """Generate high-quality quiz questions using AI"""
-        print(f"Generating {num_questions} questions ({bloom_level}) for topics: {topics[:3]}...")
+        print(f"Generating {num_questions} {question_type} questions ({bloom_level}) for topics: {topics[:3]}...")
         
         # Try Gemini first (primary - best quality)
         if self.models_to_try:
-            result = self._generate_with_gemini(topics, context, num_questions, difficulty, bloom_level)
+            result = self._generate_with_gemini(topics, context, num_questions, difficulty, bloom_level, question_type)
             if result and len(result.get("questions", [])) >= num_questions // 2:
                 return result
         
@@ -109,10 +109,10 @@ class QuizGenerator:
         print("All AI attempts failed. Using enhanced rule-based fallback.")
         return self._generate_fallback_quiz(topics, num_questions, difficulty)
 
-    def _generate_with_gemini(self, topics: List[str], context: str, num_questions: int, difficulty: str, bloom_level: str) -> Optional[Dict]:
+    def _generate_with_gemini(self, topics: List[str], context: str, num_questions: int, difficulty: str, bloom_level: str, question_type: str) -> Optional[Dict]:
         """Generate questions using Gemini with enhanced Chain-of-Thought prompting"""
         
-        prompt = self._create_enhanced_prompt(topics, context, num_questions, difficulty, bloom_level)
+        prompt = self._create_enhanced_prompt(topics, context, num_questions, difficulty, bloom_level, question_type)
         
         for model_name in self.models_to_try:
             print(f"Attempting generation with model: {model_name}")
@@ -127,7 +127,7 @@ class QuizGenerator:
                             max_output_tokens=4096
                         )
                     )
-                    result = self._parse_gemini_response(response.text, topics, difficulty, bloom_level)
+                    result = self._parse_gemini_response(response.text, topics, difficulty, bloom_level, question_type)
                     if result and result.get("questions"):
                         print(f"Successfully generated {len(result['questions'])} questions with {model_name}")
                         return result
@@ -140,7 +140,7 @@ class QuizGenerator:
                         time.sleep(1)
         return None
 
-    def _create_enhanced_prompt(self, topics: List[str], context: str, num_questions: int, difficulty: str, bloom_level: str) -> str:
+    def _create_enhanced_prompt(self, topics: List[str], context: str, num_questions: int, difficulty: str, bloom_level: str, question_type: str) -> str:
         """Create an enhanced Chain-of-Thought prompt for high-quality question generation"""
         
         topics_str = ", ".join(topics[:10])
@@ -161,8 +161,29 @@ class QuizGenerator:
             "Mixed": "Vary across Bloom's levels for comprehensive assessment."
         }.get(bloom_level, "Mix of cognitive levels.")
 
-        return f'''You are an expert academic question writer. Your task is to create {num_questions} high-quality multiple choice questions.
+        type_instructions = {
+            "mcq": '''Format: Multiple Choice
+            Rules:
+            - Create 4 plausible options.
+            - Only 1 correct answer.
+            - return "options" as an array and "correct_answer" as the 0-indexed integer of the correct option.''',
+            
+            "fill_ups": '''Format: Fill in the Blanks
+            Rules:
+            - Create a sentence with a blank marked as "____".
+            - The blank should represent a significant technical term or concept.
+            - return "correct_answer" as the EXACT keyword or phrase that fits the blank.
+            - DO NOT return "options".''',
+            
+            "short_answer": '''Format: Short Answer
+            Rules:
+            - Create an open-ended question requiring a concise, 1-2 sentence response.
+            - return "correct_answer" as a list of key words or short phrases that MUST be present for the answer to be correct.
+            - DO NOT return "options".'''
+        }.get(question_type, "Generate Multiple Choice Questions.")
 
+        return f'''You are an expert academic question writer. Your task is to create {num_questions} high-quality {question_type} questions.
+ 
 === SOURCE MATERIAL ===
 Topics: {topics_str}
 
@@ -177,54 +198,47 @@ DIFFICULTY: {difficulty.upper()}
 BLOOM'S LEVEL: {bloom_level}
 {bloom_guide}
 
+QUESTION TYPE: {question_type.upper()}
+{type_instructions}
+
 === CRITICAL QUALITY RULES ===
 
 1. **SPECIFIC QUESTIONS**: Each question must test a specific fact, concept, or relationship from the material.
-   - BAD: "Why is Machine Learning important?"
-   - GOOD: "What is the primary purpose of the activation function in a neural network?"
-
-2. **PLAUSIBLE DISTRACTORS**: All 4 options must be:
-   - From the SAME domain/category (all are algorithms, all are numbers, all are processes)
-   - Grammatically consistent with the question stem
-   - Similar in length and complexity
-   - Actually wrong but believably so
-   
-   - BAD OPTIONS: "It tastes good", "It causes global warming", "None of the above"
-   - GOOD OPTIONS: For a question about neural network activation functions:
-     * "To introduce non-linearity into the network" (CORRECT)
-     * "To normalize the input values between layers"
-     * "To reduce the number of parameters in the model"
-     * "To calculate the loss function gradient"
-
-3. **UNAMBIGUOUS ANSWERS**: Only one option should be definitively correct.
-
-4. **NO TRICKS**: Avoid "All of the above", "None of the above", or trick questions.
-
-5. **CONTEXT-GROUNDED**: If context is provided, questions MUST be answerable from that context.
-
-=== THINK STEP BY STEP ===
-
-For each question:
-1. Identify a specific testable fact or concept from the material
-2. Formulate a clear, unambiguous question
-3. Write the correct answer
-4. Generate 3 plausible but incorrect alternatives from the same domain
-5. Verify only one answer is correct
-6. Shuffle options randomly
+2. **UNAMBIGUOUS ANSWERS**: Only one answer should be definitively correct.
+3. **NO TRICKS**: Avoid trick questions.
+4. **CONTEXT-GROUNDED**: If context is provided, questions MUST be answerable from that context.
 
 === OUTPUT FORMAT ===
 
 Return ONLY a valid JSON array. No markdown, no explanation, no code blocks.
 
+For MCQ:
 [
   {{
-    "question": "Clear, specific question text ending with a question mark?",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correct_answer": 0
+    "question": "Question text?",
+    "options": ["A", "B", "C", "D"],
+    "correct_answer": 0,
+    "question_type": "mcq"
   }}
 ]
 
-Where correct_answer is the 0-indexed position (0, 1, 2, or 3) of the correct option.
+For FILL_UPS:
+[
+  {{
+    "question": "The ____ is the brain of the computer.",
+    "correct_answer": "CPU",
+    "question_type": "fill_ups"
+  }}
+]
+
+For SHORT_ANSWER:
+[
+  {{
+    "question": "What is the purpose of a compiler?",
+    "correct_answer": "translates, code, high-level, machine language",
+    "question_type": "short_answer"
+  }}
+]
 
 Generate exactly {num_questions} questions now:'''
 
@@ -298,7 +312,7 @@ Example: ["Backpropagation", "Gradient Descent", "Learning Rate", "Overfitting"]
         
         return list(topics)[:20]
 
-    def _parse_gemini_response(self, response_text: str, topics: List[str], difficulty: str, bloom_level: str) -> Dict:
+    def _parse_gemini_response(self, response_text: str, topics: List[str], difficulty: str, bloom_level: str, question_type: str) -> Dict:
         """Parse and validate Gemini response"""
         try:
             # Clean up response
@@ -318,7 +332,9 @@ Example: ["Backpropagation", "Gradient Descent", "Learning Rate", "Overfitting"]
             # Validate each question
             valid_questions = []
             for q in questions:
-                if self._validate_question(q):
+                if self._validate_question(q, question_type):
+                    # Ensure question_type is set
+                    q["question_type"] = question_type
                     valid_questions.append(q)
                 else:
                     print(f"Filtered out invalid question: {q.get('question', 'N/A')[:50]}...")
@@ -329,6 +345,7 @@ Example: ["Backpropagation", "Gradient Descent", "Learning Rate", "Overfitting"]
                 "questions": valid_questions,
                 "difficulty": difficulty,
                 "bloom_level": bloom_level,
+                "question_type": question_type,
                 "topic_count": len(topics)
             }
         except json.JSONDecodeError as e:
@@ -339,44 +356,50 @@ Example: ["Backpropagation", "Gradient Descent", "Learning Rate", "Overfitting"]
             print(f"Parse error: {e}")
             return None
 
-    def _validate_question(self, q: Dict) -> bool:
+    def _validate_question(self, q: Dict, expected_type: str) -> bool:
         """Validate a single question for quality"""
         # Required fields
-        if not all(k in q for k in ["question", "options", "correct_answer"]):
+        if "question" not in q or "correct_answer" not in q:
             return False
         
-        # Must have exactly 4 options
-        if not isinstance(q["options"], list) or len(q["options"]) != 4:
-            return False
-        
-        # Correct answer must be valid index
-        if not isinstance(q["correct_answer"], int) or q["correct_answer"] not in [0, 1, 2, 3]:
-            return False
-        
-        # Question must end with question mark or be substantial
-        question = q["question"]
-        if len(question) < 15:
-            return False
-        
-        # Filter out nonsensical options
-        bad_phrases = [
-            "tastes good", "causes global warming", "holiday destination",
-            "musical instrument", "type of food", "color", "edible",
-            "fictional character", "biological organism", "none of the above",
-            "all of the above", "not important", "unrelated"
-        ]
-        
-        for opt in q["options"]:
-            opt_lower = opt.lower()
-            for bad in bad_phrases:
-                if bad in opt_lower:
-                    print(f"Filtered: nonsensical option '{opt}'")
-                    return False
-        
-        # All options must be non-empty and reasonable length
-        for opt in q["options"]:
-            if not isinstance(opt, str) or len(opt.strip()) < 2 or len(opt) > 500:
+        # Type specific validation
+        if expected_type == "mcq":
+            if "options" not in q or not isinstance(q["options"], list) or len(q["options"]) != 4:
                 return False
+            if not isinstance(q["correct_answer"], int) or q["correct_answer"] not in [0, 1, 2, 3]:
+                return False
+        else:
+            # For fill_ups and short_answer, correct_answer should be string
+            if not isinstance(q["correct_answer"], (str, list)):
+                return False
+        
+        # Question text validation
+        question = q["question"]
+        if len(question) < 10:
+            return False
+            
+        if expected_type == "fill_ups" and "____" not in question:
+            return False
+        
+        # Filter out nonsensical MCQ options
+        if expected_type == "mcq":
+            bad_phrases = [
+                "tastes good", "causes global warming", "holiday destination",
+                "musical instrument", "type of food", "color", "edible",
+                "fictional character", "biological organism", "none of the above",
+                "all of the above", "not important", "unrelated"
+            ]
+            
+            for opt in q["options"]:
+                if not isinstance(opt, str): return False
+                opt_lower = opt.lower()
+                for bad in bad_phrases:
+                    if bad in opt_lower:
+                        return False
+            
+            for opt in q["options"]:
+                if len(opt.strip()) < 1 or len(opt) > 500:
+                    return False
         
         return True
 

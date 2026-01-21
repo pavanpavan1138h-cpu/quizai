@@ -179,13 +179,14 @@ async def generate_quiz(request: QuizRequest):
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
         
-        # Generate quiz with context and bloom level
+        # Generate quiz with context, bloom level and question type
         quiz = quiz_generator.generate_quiz(
             topics=session["topics"],
             context=session.get("extracted_text", ""),
             num_questions=request.num_questions or 18,
             difficulty="medium",
-            bloom_level=request.bloom_level or "Mixed"
+            bloom_level=request.bloom_level or "Mixed",
+            question_type=request.question_type or "mcq"
         )
         
         # Store quiz in database
@@ -216,7 +217,25 @@ async def submit_quiz(submission: QuizSubmission):
         for i, question in enumerate(quiz["questions"]):
             user_answer = submission.answers.get(str(i))
             correct_answer = question["correct_answer"]
-            is_correct = user_answer == correct_answer
+            q_type = question.get("question_type", "mcq")
+            
+            is_correct = False
+            
+            if q_type == "mcq":
+                is_correct = (str(user_answer) == str(correct_answer))
+            elif q_type == "fill_ups":
+                # Exact or very close keyword match (case-insensitive)
+                if isinstance(user_answer, str) and isinstance(correct_answer, str):
+                    is_correct = user_answer.strip().lower() == correct_answer.strip().lower()
+            elif q_type == "short_answer":
+                # Check if user answer contains most of the key keywords
+                if isinstance(user_answer, str) and isinstance(correct_answer, str):
+                    keywords = [k.strip().lower() for k in correct_answer.split(",")]
+                    user_val = user_answer.lower()
+                    matches = [k for k in keywords if k in user_val]
+                    # If at least 50% of keywords match, we count it as correct for this simple implementation
+                    # Or at least one if it's very specific
+                    is_correct = len(matches) >= (len(keywords) + 1) // 2
             
             if is_correct:
                 correct += 1
@@ -271,13 +290,14 @@ async def generate_adaptive_quiz(request: QuizRequest):
         else:
             difficulty = "medium"
         
-        # Generate adaptive quiz with context and bloom level
+        # Generate adaptive quiz with context, bloom level and question type
         quiz = quiz_generator.generate_quiz(
             topics=session["topics"],
             context=session.get("extracted_text", ""),
             num_questions=request.num_questions or 18,
             difficulty=difficulty,
-            bloom_level=request.bloom_level or "Mixed"
+            bloom_level=request.bloom_level or "Mixed",
+            question_type=request.question_type or "mcq"
         )
         
         # Store quiz

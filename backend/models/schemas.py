@@ -16,6 +16,7 @@ class QuizRequest(BaseModel):
     session_id: str
     num_questions: Optional[int] = 10
     bloom_level: Optional[str] = "Mixed"
+    question_type: Optional[str] = "mcq"  # mcq, fill_ups, short_answer
 
 class ParseQuizRequest(BaseModel):
     text: str
@@ -28,8 +29,9 @@ class TextRequest(BaseModel):
 
 class QuizQuestionResponse(BaseModel):
     question: str
-    options: List[str]
-    correct_answer: int
+    options: Optional[List[str]] = None
+    correct_answer: str | int  # int for mcq index, str for keywords
+    question_type: str = "mcq"
     source: Optional[str] = "AI"
 
 
@@ -42,7 +44,7 @@ class QuizResponse(BaseModel):
 class QuizSubmission(BaseModel):
     quiz_id: str
     session_id: str
-    answers: Dict[str, int]
+    answers: Dict[str, str | int]
 
 
 class ResultItem(BaseModel):
