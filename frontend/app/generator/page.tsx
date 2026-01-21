@@ -127,7 +127,7 @@ export default function GeneratorPage() {
     }
 
     return (
-        return (
+
         <div className="min-h-screen py-12 px-4 animate-fade-in pb-24">
             <div className="max-w-4xl mx-auto">
 
